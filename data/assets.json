@@ -1,0 +1,14 @@
+{
+  "assets": [
+    { "id": "H1", "name": "MY Hospital",              "type": "Hospital",    "lat": 22.7255, "lon": 75.8889, "risk": "HIGH",     "status": "AT RISK",  "ward": 23 },
+    { "id": "H2", "name": "Bombay Hospital",           "type": "Hospital",    "lat": 22.7196, "lon": 75.8650, "risk": "MODERATE", "status": "MONITOR",  "ward": 8  },
+    { "id": "S1", "name": "Devi Ahilya Univ. School",  "type": "School",      "lat": 22.7544, "lon": 75.9021, "risk": "HIGH",     "status": "AT RISK",  "ward": 23 },
+    { "id": "B1", "name": "Khan River Bridge – NH52",  "type": "Bridge",      "lat": 22.7125, "lon": 75.8701, "risk": "SEVERE",   "status": "AT RISK",  "ward": 15 },
+    { "id": "B2", "name": "Nanda Nagar Overpass",      "type": "Bridge",      "lat": 22.7350, "lon": 75.8812, "risk": "HIGH",     "status": "MONITOR",  "ward": 31 },
+    { "id": "E1", "name": "Vijay Nagar Substation 1",  "type": "Substation",  "lat": 22.7510, "lon": 75.8950, "risk": "HIGH",     "status": "AT RISK",  "ward": 23 },
+    { "id": "SH1","name": "Emergency Shelter – Rajwada","type": "Shelter",    "lat": 22.7196, "lon": 75.8577, "risk": "MODERATE", "status": "OPEN",     "ward": 8  },
+    { "id": "W1", "name": "Bijalpur Water Treatment",  "type": "Water Plant", "lat": 22.6890, "lon": 75.8601, "risk": "LOW",      "status": "NORMAL",   "ward": 41 },
+    { "id": "R1", "name": "Vijay Nagar Ring Road",     "type": "Road",        "lat": 22.7480, "lon": 75.8870, "risk": "SEVERE",   "status": "FLOODED",  "ward": 23 },
+    { "id": "R2", "name": "MR-10 Expressway Segment",  "type": "Road",        "lat": 22.7000, "lon": 75.8800, "risk": "HIGH",     "status": "AT RISK",  "ward": 15 }
+  ]
+}

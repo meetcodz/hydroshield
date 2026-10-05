@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HydroShield — Operations Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F4F6F8;
+      --surface: #FFFFFF;
+      --primary: #123B5D;
+      --secondary: #2F6F95;
+      --text: #17212B;
+      --muted: #667482;
+      --border: #D7DEE5;
+      --success: #247A52;
+      --warning: #C98616;
+      --error: #B33A3A;
+      --severe: #7A1F1F;
+      --info: #286D91;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 10px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    #header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 64px;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 1000;
+      border-bottom: 2px solid #0d2e47;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+    }
+    .header-logo .logo-icon {
+      width: 34px;
+      height: 34px;
+      background: #2F6F95;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .header-logo .logo-text {
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.3px;
+    }
+    .header-logo .logo-sub {
+      color: #8BBDD9;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .header-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: #C0D8EA;
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+    .header-center .divider { color: #4a7a9b; margin: 0 4px; }
+    .header-center .district-name { color: #FFFFFF; font-weight: 600; }
+    .header-center .updated-time { color: #8BBDD9; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 220px;
+      justify-content: flex-end;
+    }
+    .status-badge {
+      background: #1a5e35;
+      color: #5DD98A;
+      border: 1px solid #247A52;
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-badge::before {
+      content: '';
+      width: 7px; height: 7px;
+      background: #5DD98A;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .user-btn {
+      width: 34px; height: 34px;
+      background: #2F6F95;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 16px; cursor: pointer;
+      border: 2px solid #4a8fba;
+    }
+    .notif-btn {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.12);
+      position: relative;
+      color: #C0D8EA;
+      font-size: 16px;
+    }
+    .notif-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 8px; height: 8px;
+      background: var(--error); border-radius: 50%;
+      border: 1.5px solid var(--primary);
+    }
+
+    /* ── SIDEBAR ─────────────────────────────────────────────── */
+    #sidebar {
+      position: fixed;
+      top: 64px; left: 0; bottom: 0;
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 900;
+      overflow-y: auto;
+    }
+
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 16px 16px 6px;
+    }
+
+    .nav-list { list-style: none; padding: 6px 8px; }
+    .nav-list li { margin-bottom: 2px; }
+    .nav-list a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 13px;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+    .nav-list a:hover { background: var(--bg); color: var(--text); }
+    .nav-list a.active {
+      background: #E8F0F7;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .nav-list a.active .nav-icon { color: var(--primary); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--error);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .sidebar-divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+    .data-sources { padding: 12px 16px; }
+    .data-sources h4 {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .ds-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .ds-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ds-dot.online { background: var(--success); }
+    .ds-dot.warn { background: var(--warning); }
+    .ds-status { margin-left: auto; font-size: 10px; color: var(--success); font-weight: 600; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-footer p { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+    /* ── MAIN ─────────────────────────────────────────────── */
+    #main {
+      margin-left: 240px;
+      padding-top: 64px;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+
+    .main-inner {
+      padding: 16px 20px 0;
+    }
+
+    /* Page Title Bar */
+    .page-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .page-title-bar h1 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .page-title-bar .subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .page-actions { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .btn-outline {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-outline:hover { background: var(--bg); }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover { background: #0e2f4a; }
+    .btn-danger {
+      background: var(--error);
+      color: white;
+    }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+    /* ── KPI CARDS ─────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 3px 0 0 3px;
+    }
+    .kpi-card.danger::before { background: var(--error); }
+    .kpi-card.severe::before { background: var(--severe); }
+    .kpi-card.warning::before { background: var(--warning); }
+    .kpi-card.info::before { background: var(--info); }
+
+    .kpi-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .kpi-icon { font-size: 18px; }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .kpi-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .kpi-badge.extreme { background: #f5e4e4; color: var(--severe); }
+    .kpi-badge.high { background: #fdecea; color: var(--error); }
+    .kpi-badge.moderate { background: #fef3e2; color: var(--warning); }
+    .kpi-badge.info-b { background: #e3f0f8; color: var(--info); }
+    .kpi-trend {
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .kpi-trend.up { color: var(--error); }
+    .kpi-trend.down { color: var(--success); }
+
+    /* ── MAIN ROW ─────────────────────────────────────────── */
+    .main-row {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .panel-title .icon { font-size: 15px; }
+    .count-badge {
+      background: var(--error);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .panel-actions { display: flex; gap: 6px; }
+
+    /* MAP */
+    .map-container { position: relative; }
+    #map { width: 100%; height: 420px; }
+
+    .map-overlay-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 800;
+      display: flex;
+      gap: 4px;
+    }
+    .map-overlay-btn {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+      transition: background 0.15s;
+    }
+    .map-overlay-btn:hover { background: var(--bg); }
+    .map-overlay-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .map-legend {
+      position: absolute;
+      bottom: 30px;
+      left: 10px;
+      z-index: 800;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+    .map-legend h4 {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0,0,0,0.25);
+    }
+
+    /* ALERTS PANEL */
+    .alerts-list { padding: 0; }
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-item:hover { background: #FAFBFC; }
+
+    .sev-badge {
+      flex-shrink: 0;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 3px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+    .sev-severe { background: var(--severe); color: white; }
+    .sev-high { background: var(--error); color: white; }
+    .sev-moderate { background: var(--warning); color: white; }
+    .sev-low { background: #286D91; color: white; }
+
+    .alert-body { flex: 1; min-width: 0; }
+    .alert-area {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .alert-type {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .alert-time {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .alert-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .btn-view {
+      background: #E8F0F7;
+      color: var(--primary);
+      border: none;
+      border-radius: 4px;
+      padding: 3px 9px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-view:hover { background: #d0e3f0; }
+
+    /* ── FORECAST TIMELINE ─────────────────────────────────── */
+    .forecast-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .forecast-body {
+      padding: 16px 20px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .slider-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .timeline-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .time-ticks {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .tick {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .tick.active-tick {
+      background: var(--primary);
+      color: white;
+    }
+
+    #timeline-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 4px;
+      background: linear-gradient(to right, var(--primary) 0%, var(--primary) 0%, var(--border) 0%, var(--border) 100%);
+      outline: none;
+      cursor: pointer;
+    }
+    #timeline-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: 2.5px solid white;
+      box-shadow: 0 1px 5px rgba(18,59,93,0.4);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    #timeline-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    .forecast-step-label {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .forecast-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .fc-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      transition: all 0.25s;
+    }
+    .fc-card.escalating { border-color: var(--error); background: #fef5f5; }
+    .fc-card.severe-fc { border-color: var(--severe); background: #f9eeee; }
+
+    .fc-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .fc-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      transition: color 0.25s;
+    }
+    .fc-value.warn-v { color: var(--error); }
+    .fc-value.severe-v { color: var(--severe); }
+    .fc-sublabel {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .fc-trend {
+      font-size: 10px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .fc-trend.up { color: var(--error); }
+    .fc-trend.down { color: var(--success); }
+
+    .fc-alert-banner {
+      margin-top: 12px;
+      background: #f5e4e4;
+      border: 1px solid #e0a0a0;
+      border-radius: var(--radius-sm);
+      padding: 7px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--severe);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── BOTTOM INFO STRIP ─────────────────────────────────── */
+    .bottom-strip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 9px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .strip-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .strip-icon { font-size: 13px; }
+    .strip-divider {
+      width: 1px; height: 16px;
+      background: var(--border);
+      margin: 0 6px;
+    }
+    .strip-highlight { color: var(--text); font-weight: 600; }
+    .strip-time { color: var(--info); font-weight: 600; }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    #footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 7px 20px;
+      font-size: 10.5px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-left: 0;
+    }
+    #footer .footer-brand { font-weight: 600; color: var(--primary); }
+
+    /* Leaflet popup custom */
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px !important;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
+    }
+    .popup-inner { font-family: 'Inter', sans-serif; font-size: 12px; }
+    .popup-inner strong { font-size: 13px; color: #17212B; }
+    .popup-risk {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 1200px) {
+      .main-row { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<!-- ═══════════════ UNIVERSAL HEADER ═══════════════ -->
+<header class="vn-header">
+  <a class="vn-logo" href="index.html">
+    <div class="vn-logo-icon">
+      <i data-lucide="cloud-rain" style="width:20px;height:20px;"></i>
+    </div>
+    <div>
+      <div class="vn-logo-text">HYDRO<span>SHIELD</span></div>
+      <div class="vn-logo-sub">Early Warning &amp; Inundation Platform</div>
+    </div>
+  </a>
+
+  <div class="vn-header-center">
+    <span>District:</span>
+    <span class="highlight">Indore, Madhya Pradesh</span>
+    <span class="sep">|</span>
+    <span>Monsoon Ops 2024</span>
+    <span class="sep">|</span>
+    <span>Updated: <span class="highlight">15:36 IST</span></span>
+  </div>
+
+  <div class="vn-header-right">
+    <div class="vn-header-icon-btn" title="4 Active Alerts" onclick="window.location.href='alerts.html'">
+      <i data-lucide="bell" style="width:16px;height:16px;"></i>
+      <div class="badge-dot"></div>
+    </div>
+    <div class="vn-header-user">
+      <div class="vn-avatar">RS</div>
+      <span>Rajesh Sharma</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ UNIVERSAL SIDEBAR ═══════════════ -->
+<nav class="vn-sidebar">
+  <div class="vn-sidebar-nav">
+    <div class="vn-nav-section-title">Navigation</div>
+    <a href="index.html" class="vn-nav-link active">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Operations Dashboard</span>
+    </a>
+    <a href="rainfall.html" class="vn-nav-link">
+      <i data-lucide="cloud-rain"></i>
+      <span>Rainfall Intelligence</span>
+    </a>
+    <a href="inundation.html" class="vn-nav-link">
+      <i data-lucide="waves"></i>
+      <span>Inundation Map</span>
+    </a>
+    <a href="alerts.html" class="vn-nav-link">
+      <i data-lucide="bell-ring"></i>
+      <span>Alerts &amp; Triage</span>
+      <span class="vn-nav-badge">4</span>
+    </a>
+    <a href="assets.html" class="vn-nav-link">
+      <i data-lucide="building-2"></i>
+      <span>Critical Infrastructure</span>
+    </a>
+    <a href="analytics.html" class="vn-nav-link">
+      <i data-lucide="bar-chart-3"></i>
+      <span>Analytics &amp; Verification</span>
+    </a>
+  </div>
+
+  <div class="vn-sidebar-sources">
+    <div class="vn-nav-section-title" style="padding:0 0 6px;">Live Feeds</div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>NASA IMERG Satellite</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>IMD Doppler Radar</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>ECMWF NWP (0.1°)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>Ground Gauge Mesh (14/16)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot warn"></span>
+      <span>CWC River Gauge</span>
+      <span class="vn-source-tag" style="color:var(--warning);">DELAY</span>
+    </div>
+  </div>
+
+  <div class="vn-sidebar-footer">
+    Model Run: <strong>15:00 IST (EPS)</strong><br />
+    Lead Time: <strong>+72h Horizon</strong>
+  </div>
+</nav>
+
+<!-- ═══════════════ MAIN VIEWPORT ═══════════════ -->
+<main class="vn-main">
+  <div class="vn-content">
+
+    <!-- Page Title -->
+    <div class="page-title-bar">
+      <div>
+        <h1>Operations Dashboard</h1>
+        <div class="subtitle">Real-time flood risk monitoring · Indore District · 15 September 2024</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline"><i data-lucide="download" style="width:14px;height:14px;"></i> Export SitRep</button>
+        <button class="btn btn-outline"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
+        <button class="btn btn-danger" id="issue-alert-btn"><i data-lucide="alert-triangle" style="width:14px;height:14px;"></i> Issue Alert</button>
+      </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid">
+      <div class="kpi-card danger" id="kpi-rainfall">
+        <div class="kpi-header">
+          <span class="kpi-label">Rainfall (6h Cumulative)</span>
+          <span class="kpi-icon"><i data-lucide="cloud-rain" style="width:16px;height:16px;color:var(--error);"></i></span>
+        </div>
+        <div class="kpi-value" id="kv-rainfall">91 <span style="font-size:16px;font-weight:500;color:var(--muted)">mm</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+          <span class="kpi-badge extreme" id="kb-rainfall">EXTREME</span>
+          <span class="kpi-trend up" id="kt-rainfall">▲ +18mm vs 3h ago</span>
+        </div>
+        <div class="kpi-sub">IMD Threshold: 64.5mm (Extreme)</div>
+      </div>
+
+      <div class="kpi-card severe" id="kpi-flood">
+        <div class="kpi-header">
+          <span class="kpi-label">Composite Flood Risk</span>
+          <span class="kpi-icon"><i data-lucide="waves" style="width:16px;height:16px;color:var(--severe);"></i></span>
+        </div>
+        <div class="kpi-value" id="kv-flood">68<span style="font-size:16px;font-weight:500;color:var(--muted)">%</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+          <span class="kpi-badge high" id="kb-flood">HIGH</span>
+          <span class="kpi-trend up" id="kt-flood">▲ +11% since 12:00</span>
+        </div>
+        <div class="kpi-sub">4 wards above threshold</div>
+      </div>
+
+      <div class="kpi-card warning" id="kpi-pop">
+        <div class="kpi-header">
+          <span class="kpi-label">Population at Risk</span>
+          <span class="kpi-icon"><i data-lucide="users" style="width:16px;height:16px;color:var(--warning);"></i></span>
+        </div>
+        <div class="kpi-value" id="kv-pop">12,400</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+          <span class="kpi-badge high" id="kb-pop">4 WARDS</span>
+          <span class="kpi-trend up" id="kt-pop">▲ +1,400 since 14:00</span>
+        </div>
+        <div class="kpi-sub">Vijay Nagar, Rajwada, Bhawarkuan, Palasia</div>
+      </div>
+
+      <div class="kpi-card info" id="kpi-assets">
+        <div class="kpi-header">
+          <span class="kpi-label">Critical Assets at Risk</span>
+          <span class="kpi-icon"><i data-lucide="building-2" style="width:16px;height:16px;color:var(--secondary);"></i></span>
+        </div>
+        <div class="kpi-value" id="kv-assets">7</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+          <span class="kpi-badge info-b" id="kb-assets">MONITORING</span>
+          <span class="kpi-trend up" id="kt-assets">▲ +2 since 13:00</span>
+        </div>
+        <div class="kpi-sub">3 Hospitals · 2 Roads · 2 Bridges</div>
+      </div>
+    </div>
+
+    <!-- Main Row: Map + Alerts -->
+    <div class="main-row">
+
+      <!-- MAP PANEL -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="map" style="width:16px;height:16px;color:var(--secondary);"></i>
+            Live Risk Zone Map
+            <span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:4px">— Indore District</span>
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-outline btn-sm"><i data-lucide="layers" style="width:13px;height:13px;"></i> Layers</button>
+            <button class="btn btn-outline btn-sm"><i data-lucide="maximize-2" style="width:13px;height:13px;"></i> Zoom to District</button>
+          </div>
+        </div>
+        <div class="map-container">
+          <div id="map"></div>
+
+          <div class="map-overlay-controls">
+            <button class="map-overlay-btn active" id="btn-risk">Risk Zones</button>
+            <button class="map-overlay-btn" id="btn-infra">Infrastructure</button>
+          </div>
+
+          <div class="map-legend">
+            <h4>Flood Risk</h4>
+            <div class="legend-item"><div class="legend-dot" style="background:#7A1F1F"></div>Severe (&gt;80%)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#B33A3A"></div>High (70–80%)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#C98616"></div>Moderate (55–70%)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#E5A020"></div>Watch (40–55%)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALERTS PANEL -->
+      <div class="panel" style="display:flex;flex-direction:column;">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="bell" style="width:16px;height:16px;color:var(--error);"></i>
+            Active Alerts
+            <span class="count-badge">4</span>
+          </div>
+          <div class="panel-actions">
+            <a href="alerts.html" class="btn btn-outline btn-sm">View All</a>
+          </div>
+        </div>
+
+        <div class="alerts-list" style="flex:1;overflow-y:auto;">
+          <!-- Alert 1 -->
+          <div class="alert-item">
+            <div>
+              <span class="sev-badge sev-severe">SEVERE</span>
+            </div>
+            <div class="alert-body">
+              <div class="alert-area">Ward 23 — Vijay Nagar</div>
+              <div class="alert-type">Flash Flood Imminent · Nallah overflow reported</div>
+              <div class="alert-time">15:22 IST · Issued 14 min ago</div>
+            </div>
+            <div class="alert-actions">
+              <button class="btn-view">View</button>
+            </div>
+          </div>
+
+          <!-- Alert 2 -->
+          <div class="alert-item">
+            <div>
+              <span class="sev-badge sev-high">HIGH</span>
+            </div>
+            <div class="alert-body">
+              <div class="alert-area">Ward 8 — Rajwada Area</div>
+              <div class="alert-type">Heavy Rainfall Warning · Drainage capacity exceeded</div>
+              <div class="alert-time">15:05 IST · Issued 31 min ago</div>
+            </div>
+            <div class="alert-actions">
+              <button class="btn-view">View</button>
+            </div>
+          </div>
+
+          <!-- Alert 3 -->
+          <div class="alert-item">
+            <div>
+              <span class="sev-badge sev-high">HIGH</span>
+            </div>
+            <div class="alert-body">
+              <div class="alert-area">NH-52 — Bypass Road</div>
+              <div class="alert-type">Road Inundation Risk · Low-lying stretch alert</div>
+              <div class="alert-time">14:52 IST · Issued 44 min ago</div>
+            </div>
+            <div class="alert-actions">
+              <button class="btn-view">View</button>
+            </div>
+          </div>
+
+          <!-- Alert 4 -->
+          <div class="alert-item">
+            <div>
+              <span class="sev-badge sev-moderate">MODERATE</span>
+            </div>
+            <div class="alert-body">
+              <div class="alert-area">Ward 15 — Bhawarkuan</div>
+              <div class="alert-type">Waterlogging Advisory · Monitor Kahn River levels</div>
+              <div class="alert-time">14:30 IST · Issued 1h 6min ago</div>
+            </div>
+            <div class="alert-actions">
+              <button class="btn-view">View</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Summary -->
+        <div style="padding: 10px 14px; border-top: 1px solid var(--border); background: #FAFBFC;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Response Status</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:7px 10px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:var(--success)">3</div>
+              <div style="font-size:10px;color:var(--muted)">Teams Deployed</div>
+            </div>
+            <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:7px 10px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:var(--warning)">2</div>
+              <div style="font-size:10px;color:var(--muted)">Awaiting Orders</div>
+            </div>
+            <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:7px 10px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:var(--info)">240</div>
+              <div style="font-size:10px;color:var(--muted)">Evacuated</div>
+            </div>
+            <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:7px 10px;text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:var(--error)">6</div>
+              <div style="font-size:10px;color:var(--muted)">Shelters Open</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ FORECAST TIMELINE ═══ -->
+    <div class="forecast-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <i data-lucide="fast-forward" style="width:16px;height:16px;color:var(--secondary);"></i>
+          Forecast Timeline
+          <span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:4px">— ECMWF EPS · 50-member ensemble</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--muted);">Base: 15:00 IST, 15 Sep 2024</span>
+          <button class="btn btn-outline btn-sm"><i data-lucide="trending-up" style="width:13px;height:13px;"></i> Probability Chart</button>
+        </div>
+      </div>
+
+      <div class="forecast-body">
+        <!-- Slider -->
+        <div class="slider-row">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="slider-label">Forecast Horizon:</span>
+            <button class="btn btn-outline btn-sm" id="btn-play-timeline" style="padding:4px 9px;font-size:11px;gap:4px;" title="Play auto-advancing time simulation">
+              <i data-lucide="play" id="play-icon" style="width:12px;height:12px;"></i> <span id="play-text">Play Sim</span>
+            </button>
+          </div>
+          <div class="timeline-wrapper">
+            <div class="time-ticks" id="time-ticks">
+              <span class="tick active-tick" data-step="0">Now</span>
+              <span class="tick" data-step="1">+1h</span>
+              <span class="tick" data-step="2">+2h</span>
+              <span class="tick" data-step="3">+3h</span>
+              <span class="tick" data-step="4">+6h</span>
+            </div>
+            <input type="range" id="timeline-slider" min="0" max="4" step="1" value="0" />
+          </div>
+          <div class="forecast-step-label" id="step-label">Now · 15:36 IST</div>
+        </div>
+
+        <!-- Forecast KPI Cards -->
+        <div class="forecast-kpi-grid">
+          <div class="fc-card" id="fc-rainfall">
+            <div class="fc-label"><i data-lucide="cloud-rain" style="width:13px;height:13px;"></i> Cumulative Rainfall</div>
+            <div class="fc-value" id="fv-rainfall">91 mm</div>
+            <div class="fc-sublabel" id="fs-rainfall">Extreme category</div>
+            <div class="fc-trend up" id="ftr-rainfall">▲ Increasing</div>
+          </div>
+          <div class="fc-card" id="fc-flood">
+            <div class="fc-label"><i data-lucide="waves" style="width:13px;height:13px;"></i> Flood Risk Index</div>
+            <div class="fc-value" id="fv-flood">68%</div>
+            <div class="fc-sublabel" id="fs-flood">HIGH — 4 wards</div>
+            <div class="fc-trend up" id="ftr-flood">▲ Rising</div>
+          </div>
+          <div class="fc-card" id="fc-pop">
+            <div class="fc-label"><i data-lucide="users" style="width:13px;height:13px;"></i> Population at Risk</div>
+            <div class="fc-value" id="fv-pop">12,400</div>
+            <div class="fc-sublabel" id="fs-pop">4 wards affected</div>
+            <div class="fc-trend up" id="ftr-pop">▲ Expanding</div>
+          </div>
+          <div class="fc-card" id="fc-assets">
+            <div class="fc-label"><i data-lucide="building-2" style="width:13px;height:13px;"></i> Assets at Risk</div>
+            <div class="fc-value" id="fv-assets">7</div>
+            <div class="fc-sublabel" id="fs-assets">Hosp, roads, bridges</div>
+            <div class="fc-trend up" id="ftr-assets">▲ Growing</div>
+          </div>
+        </div>
+
+        <!-- Alert Banner (shows at step >= 2) -->
+        <div class="fc-alert-banner" id="fc-alert-banner" style="display:none;">
+          <i data-lucide="alert-octagon" style="width:16px;height:16px;flex-shrink:0;"></i>
+          <span><strong>Escalation Warning:</strong> At +2h, Ward 23 Vijay Nagar projected to reach SEVERE flood conditions. Recommend immediate evacuation of Zone A.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Info Strip -->
+    <div class="bottom-strip">
+      <span class="strip-item">
+        <i data-lucide="file-text" style="width:14px;height:14px;color:var(--muted);"></i>
+        <span><span class="strip-highlight">IMD Heavy Rainfall Warning</span> issued at <span class="strip-time">14:30 IST</span></span>
+      </span>
+      <div class="strip-divider"></div>
+      <span class="strip-item">
+        <i data-lucide="refresh-cw" style="width:14px;height:14px;color:var(--muted);"></i>
+        <span>Last model run: <span class="strip-time">15:00 IST</span></span>
+      </span>
+      <div class="strip-divider"></div>
+      <span class="strip-item">
+        <i data-lucide="clock" style="width:14px;height:14px;color:var(--muted);"></i>
+        <span>Next update: <span class="strip-time">15:30 IST</span></span>
+      </span>
+      <div class="strip-divider"></div>
+      <span class="strip-item">
+        <i data-lucide="gauge" style="width:14px;height:14px;color:var(--muted);"></i>
+        <span>Kahn River at Rajwada: <span class="strip-highlight">3.8m</span> (Warning: 4.0m)</span>
+      </span>
+      <div class="strip-divider"></div>
+      <span class="strip-item">
+        <i data-lucide="radar" style="width:14px;height:14px;color:var(--muted);"></i>
+        <span>Bhopal Radar: <span class="strip-highlight">Reflectivity 55 dBZ</span> over Indore</span>
+      </span>
+    </div>
+
+  </div><!-- /vn-content -->
+
+  <!-- UNIVERSAL FOOTER -->
+  <footer class="vn-footer">
+    <span><strong>HydroShield v1.0</strong> · Smart India Hackathon Early Warning Prototype</span>
+    <span>Telemetry: IMD Doppler Radar · NASA IMERG · ECMWF EPS · CWC River Gauges</span>
+    <span>District Emergency Operations Center, Indore</span>
+  </footer>
+</main>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ─────────────────────────────────────────────
+//  FORECAST DATA
+// ─────────────────────────────────────────────
+const FORECAST_STEPS = [
+  { label: 'Now · 15:36 IST',   rainfall: 91,  flood: 68, pop: 12400, assets: 7,
+    rainfallSub: 'Extreme category', floodSub: 'HIGH — 4 wards',
+    popSub: '4 wards affected', assetSub: 'Hosp, roads, bridges',
+    rainfallTrend: '▲ Increasing', floodTrend: '▲ Rising', popTrend: '▲ Expanding', assetTrend: '▲ Growing',
+    w23color: '#B33A3A', w23risk: '82%', w23sev: 'HIGH' },
+
+  { label: '+1h · 16:36 IST',   rainfall: 108, flood: 74, pop: 15200, assets: 9,
+    rainfallSub: 'Extreme — rising intensity', floodSub: 'HIGH — 5 wards',
+    popSub: '5 wards affected', assetSub: '4 Hosp, 3 Roads, 2 Bridges',
+    rainfallTrend: '▲ +17mm from now', floodTrend: '▲ +6% from now', popTrend: '▲ +2,800 people', assetTrend: '▲ +2 assets',
+    w23color: '#B33A3A', w23risk: '86%', w23sev: 'HIGH' },
+
+  { label: '+2h · 17:36 IST',   rainfall: 127, flood: 82, pop: 18700, assets: 12,
+    rainfallSub: 'Extreme — peak intensity', floodSub: 'SEVERE — 6 wards',
+    popSub: '6 wards affected', assetSub: '5 Hosp, 4 Roads, 3 Bridges',
+    rainfallTrend: '▲ +36mm from now', floodTrend: '▲ +14% — SEVERE', popTrend: '▲ +6,300 people', assetTrend: '▲ +5 assets',
+    w23color: '#7A1F1F', w23risk: '91%', w23sev: 'SEVERE' },
+
+  { label: '+3h · 18:36 IST',   rainfall: 138, flood: 85, pop: 21000, assets: 14,
+    rainfallSub: 'Extreme — max expected', floodSub: 'SEVERE — 7 wards',
+    popSub: '7 wards affected', assetSub: '5 Hosp, 5 Roads, 4 Bridges',
+    rainfallTrend: '▲ +47mm from now', floodTrend: '▲ +17% — Peak', popTrend: '▲ +8,600 people', assetTrend: '▲ +7 assets',
+    w23color: '#7A1F1F', w23risk: '93%', w23sev: 'SEVERE' },
+
+  { label: '+6h · 21:36 IST',   rainfall: 142, flood: 79, pop: 19500, assets: 11,
+    rainfallSub: 'Decreasing intensity', floodSub: 'HIGH — 6 wards',
+    popSub: '6 wards affected', assetSub: '4 Hosp, 4 Roads, 3 Bridges',
+    rainfallTrend: '▼ Tapering off', floodTrend: '▼ -3% — Easing', popTrend: '▼ -1,500 people', assetTrend: '▼ -3 assets',
+    w23color: '#7A1F1F', w23risk: '88%', w23sev: 'SEVERE' }
+];
+
+// ─────────────────────────────────────────────
+//  LEAFLET MAP INIT
+// ─────────────────────────────────────────────
+const map = L.map('map', {
+  center: [22.7196, 75.8577],
+  zoom: 13,
+  zoomControl: true
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(map);
+
+// Ward zone definitions
+const wards = [
+  { name: 'Ward 23 — Vijay Nagar', latlng: [22.7524, 75.8929], radius: 800,
+    color: '#B33A3A', fillColor: '#B33A3A', risk: '82%', pop: '4,800', sev: 'HIGH' },
+  { name: 'Ward 8 — Rajwada', latlng: [22.7196, 75.8577], radius: 600,
+    color: '#C98616', fillColor: '#C98616', risk: '71%', pop: '3,200', sev: 'HIGH' },
+  { name: 'Ward 15 — Bhawarkuan', latlng: [22.6985, 75.8701], radius: 500,
+    color: '#C98616', fillColor: '#C98616', risk: '67%', pop: '2,600', sev: 'MODERATE' },
+  { name: 'Ward 31 — Palasia', latlng: [22.7293, 75.8836], radius: 400,
+    color: '#E5A020', fillColor: '#E5A020', risk: '54%', pop: '1,800', sev: 'WATCH' }
+];
+
+function makePopup(ward) {
+  return `<div class="popup-inner">
+    <strong>${ward.name}</strong><br/>
+    Population at Risk: <b>${ward.pop}</b><br/>
+    <span class="popup-risk" style="background:${ward.fillColor};color:white">
+      ${ward.sev} — Flood Risk: ${ward.risk}
+    </span>
+    <br/><span style="font-size:11px;color:#667482;margin-top:4px;display:block">
+      Click for detailed ward report
+    </span>
+  </div>`;
+}
+
+// Create circles
+const circles = wards.map(w => {
+  const c = L.circle(w.latlng, {
+    radius: w.radius,
+    color: w.color,
+    fillColor: w.fillColor,
+    fillOpacity: 0.28,
+    weight: 2,
+    opacity: 0.85
+  }).addTo(map);
+  c.bindPopup(makePopup(w));
+  c.bindTooltip(`<b>${w.name}</b><br/>Risk: ${w.risk}`, { sticky: true });
+  return { circle: c, ward: w };
+});
+
+// Add infrastructure markers (hospitals etc.)
+const infraMarkers = [
+  { latlng: [22.7256, 75.8670], label: '🏥 MY Hospital (Govt)', type: 'hospital' },
+  { latlng: [22.7339, 75.8900], label: '🏥 Bombay Hospital', type: 'hospital' },
+  { latlng: [22.7190, 75.8540], label: '🌉 Rajwada Bridge', type: 'bridge' },
+  { latlng: [22.7060, 75.8720], label: '🚗 NH-52 Low Crossing', type: 'road' }
+];
+
+const infraMarkersList = [];
+infraMarkers.forEach(m => {
+  const markerInstance = L.marker(m.latlng, {
+    icon: L.divIcon({
+      className: '',
+      html: `<div style="background:white;border:2px solid #D7DEE5;border-radius:6px;padding:3px 7px;
+                         font-size:11px;font-weight:600;color:#17212B;
+                         box-shadow:0 1px 4px rgba(0,0,0,0.15);white-space:nowrap;">${m.label}</div>`,
+      iconAnchor: [50, 12]
+    })
+  }).addTo(map).bindPopup(`<b>${m.label}</b><br/>Under monitoring`);
+  infraMarkersList.push(markerInstance);
+});
+
+// Kahn River approximate path
+const kahnPath = [
+  [22.6900, 75.8400], [22.7000, 75.8550], [22.7100, 75.8620],
+  [22.7196, 75.8650], [22.7290, 75.8700], [22.7400, 75.8800]
+];
+const riverLine = L.polyline(kahnPath, {
+  color: '#2F6F95', weight: 3.5, opacity: 0.7, dashArray: '6 3'
+}).addTo(map).bindTooltip('Kahn River — Level: 3.8m (Warning: 4.0m)', { sticky: true });
+
+// ─────────────────────────────────────────────
+//  TIMELINE SLIDER
+// ─────────────────────────────────────────────
+const slider = document.getElementById('timeline-slider');
+const stepLabel = document.getElementById('step-label');
+const ticks = document.querySelectorAll('.tick');
+const alertBanner = document.getElementById('fc-alert-banner');
+
+function updateForecast(step) {
+  const d = FORECAST_STEPS[step];
+
+  // Update step label
+  stepLabel.textContent = d.label;
+
+  // Update KPI cards
+  document.getElementById('fv-rainfall').textContent = d.rainfall + ' mm';
+  document.getElementById('fs-rainfall').textContent = d.rainfallSub;
+  document.getElementById('ftr-rainfall').textContent = d.rainfallTrend;
+
+  document.getElementById('fv-flood').textContent = d.flood + '%';
+  document.getElementById('fs-flood').textContent = d.floodSub;
+  document.getElementById('ftr-flood').textContent = d.floodTrend;
+
+  document.getElementById('fv-pop').textContent = d.pop.toLocaleString('en-IN');
+  document.getElementById('fs-pop').textContent = d.popSub;
+  document.getElementById('ftr-pop').textContent = d.popTrend;
+
+  document.getElementById('fv-assets').textContent = d.assets;
+  document.getElementById('fs-assets').textContent = d.assetSub;
+  document.getElementById('ftr-assets').textContent = d.assetTrend;
+
+  // Color classes for flood value
+  const floodEl = document.getElementById('fv-flood');
+  floodEl.className = 'fc-value';
+  if (d.flood >= 80) floodEl.classList.add('severe-v');
+  else if (d.flood >= 65) floodEl.classList.add('warn-v');
+
+  // Card escalation styling
+  const fcFlood = document.getElementById('fc-flood');
+  fcFlood.className = 'fc-card';
+  if (d.flood >= 80) fcFlood.classList.add('severe-fc');
+  else if (d.flood >= 70) fcFlood.classList.add('escalating');
+
+  // Update Ward 23 circle (index 0)
+  circles[0].circle.setStyle({
+    color: d.w23color,
+    fillColor: d.w23color,
+    fillOpacity: step >= 2 ? 0.38 : 0.28
+  });
+  // Update popup
+  const updatedWard = { ...wards[0], fillColor: d.w23color, color: d.w23color, risk: d.w23risk, sev: d.w23sev };
+  circles[0].circle.bindPopup(makePopup(updatedWard));
+  circles[0].circle.bindTooltip(`<b>${wards[0].name}</b><br/>Risk: ${d.w23risk} — ${d.w23sev}`, { sticky: true });
+
+  // Alert banner
+  alertBanner.style.display = step >= 2 ? 'flex' : 'none';
+
+  // Trend arrows direction
+  const isTrending = (t) => t.startsWith('▲') || t.startsWith('▼');
+  ['rainfall','flood','pop','assets'].forEach(k => {
+    const trendEl = document.getElementById('ftr-' + k);
+    if (trendEl) {
+      trendEl.className = 'fc-trend';
+      const txt = trendEl.textContent;
+      if (txt.startsWith('▼')) trendEl.classList.add('down');
+      else trendEl.classList.add('up');
+    }
+  });
+
+  // Update slider gradient
+  const pct = (step / 4) * 100;
+  slider.style.background = `linear-gradient(to right, var(--primary) 0%, var(--primary) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
+
+  // Update tick highlights
+  ticks.forEach((t, i) => {
+    t.classList.toggle('active-tick', i === step);
+  });
+
+  // Update main KPIs too
+  document.getElementById('kv-rainfall').innerHTML = d.rainfall + ' <span style="font-size:16px;font-weight:500;color:var(--muted)">mm</span>';
+  document.getElementById('kv-flood').innerHTML = d.flood + '<span style="font-size:16px;font-weight:500;color:var(--muted)">%</span>';
+  document.getElementById('kv-pop').textContent = d.pop.toLocaleString('en-IN');
+  document.getElementById('kv-assets').textContent = d.assets;
+}
+
+// Slider input event
+slider.addEventListener('input', function() {
+  updateForecast(parseInt(this.value));
+});
+
+// Tick click
+ticks.forEach((t, i) => {
+  t.addEventListener('click', () => {
+    slider.value = i;
+    updateForecast(i);
+  });
+});
+
+// Play / Pause Time Simulation
+let playInterval = null;
+const playBtn = document.getElementById('btn-play-timeline');
+const playText = document.getElementById('play-text');
+
+if (playBtn) {
+  playBtn.addEventListener('click', function() {
+    if (playInterval) {
+      clearInterval(playInterval);
+      playInterval = null;
+      playText.textContent = 'Play Sim';
+      playBtn.classList.remove('btn-primary');
+      playBtn.classList.add('btn-outline');
+    } else {
+      playText.textContent = 'Pause';
+      playBtn.classList.remove('btn-outline');
+      playBtn.classList.add('btn-primary');
+      playInterval = setInterval(() => {
+        let next = (parseInt(slider.value) + 1) % 5;
+        slider.value = next;
+        updateForecast(next);
+      }, 1600);
+    }
+  });
+}
+
+// Init
+updateForecast(0);
+
+// ─────────────────────────────────────────────
+//  MAP OVERLAY BUTTONS
+// ─────────────────────────────────────────────
+document.getElementById('btn-risk').addEventListener('click', function() {
+  this.classList.add('active');
+  document.getElementById('btn-infra').classList.remove('active');
+  circles.forEach(c => {
+    if (!map.hasLayer(c.circle)) c.circle.addTo(map);
+  });
+});
+
+document.getElementById('btn-infra').addEventListener('click', function() {
+  this.classList.add('active');
+  document.getElementById('btn-risk').classList.remove('active');
+  // Zoom to reveal infrastructure markers
+  map.setView([22.723, 75.875], 14);
+  infraMarkersList[0].openPopup();
+});
+
+// View Alert buttons
+document.querySelectorAll('.btn-view').forEach(btn => {
+  btn.addEventListener('click', () => {
+    window.location.href = 'alerts.html';
+  });
+});
+
+// Layers button
+document.querySelectorAll('.panel-actions button').forEach(b => {
+  if (b.textContent.includes('Zoom')) {
+    b.addEventListener('click', () => map.setView([22.7196, 75.8577], 13));
+  } else if (b.textContent.includes('Layers')) {
+    b.addEventListener('click', () => window.location.href = 'inundation.html');
+  }
+});
+
+// Export & Refresh
+document.querySelectorAll('.page-actions button').forEach(b => {
+  if (b.textContent.includes('Export')) {
+    b.addEventListener('click', () => {
+      const step = parseInt(slider.value);
+      const d = forecastData[step];
+      const sitrepText = `===============================================================
+HYDROSHIELD EMERGENCY OPERATIONS WORKSPACE — SITUATION REPORT (SITREP)
+District Emergency Operations Center, Indore, Madhya Pradesh
+===============================================================
+Generated At : ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+Horizon      : ${d.label}
+Model Run    : ECMWF HRES / EPS + XGBoost Local Calibration
+Data Feeds   : IMD Doppler (Indore), NASA IMERG Early, Ground Gauge Mesh
+
+1. KEY OPERATIONAL METRICS:
+   - 6h Cumulative Rainfall : ${d.rainfall} mm (IMD Alert Level: Extreme)
+   - Composite Flood Risk   : ${d.flood}%
+   - Population at Risk     : ${d.pop.toLocaleString('en-IN')} citizens
+   - Critical Infrastructure: ${d.assets} assets affected
+   - Ward 23 Risk Rating    : ${d.w23risk} (${d.w23sev})
+
+2. ASSETS UNDER HIGH/CRITICAL SURVEILLANCE:
+   - MY Hospital (Ward 23) - Patient evacuation ready, ground floor generators secured
+   - Khan River Bridge NH52 - Current gauge 4.2m / Warning 5.5m
+   - Vijay Nagar Ring Road - 0.40m-0.80m standing water detected
+
+3. TACTICAL DEPLOYMENTS & SHELTER STATUS:
+   - SDRF/NDRF Response Teams : 3 Deployed, 2 Standby
+   - Evacuated Population      : 240 persons
+   - Relief Shelters Open      : 6 Shelters Active
+
+Auth: District Emergency Operations Center (DEOC) · Ops Command
+===============================================================`;
+      const blob = new Blob([sitrepText], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `HydroShield_SitRep_Indore_${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#123B5D;color:#fff;padding:12px 20px;border-radius:8px;font-weight:600;font-size:12px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;';
+      toast.innerHTML = '<span>📄 Situation Report (SitRep) downloaded successfully!</span>';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    });
+  } else if (b.textContent.includes('Refresh')) {
+    b.addEventListener('click', () => {
+      updateForecast(parseInt(slider.value));
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#247A52;color:#fff;padding:10px 18px;border-radius:6px;font-weight:600;font-size:12px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+      toast.textContent = '✓ Data feeds refreshed successfully (IMD Doppler, ECMWF 15:00 UTC, IMERG)';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    });
+  }
+});
+
+// ─────────────────────────────────────────────
+//  ISSUE ALERT BUTTON & LUCIDE INIT
+// ─────────────────────────────────────────────
+document.getElementById('issue-alert-btn').addEventListener('click', function() {
+  window.location.href = 'alerts.html';
+});
+
+lucide.createIcons();
+</script>
+</body>
+</html>

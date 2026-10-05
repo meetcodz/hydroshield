@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics – HydroShield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--bg); }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-name { font-size: 13px; color: var(--text); }
+  .metric-val { font-size: 13px; font-weight: 600; }
+  .metric-bar-wrap { width: 120px; height: 6px; background: var(--border); border-radius: 3px; }
+  .metric-bar { height: 6px; border-radius: 3px; }
+  .score-big { font-size: 52px; font-weight: 700; line-height: 1; color: var(--success); }
+  .score-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .perf-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
+  .perf-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; text-align: center; }
+  .perf-val { font-size: 24px; font-weight: 700; }
+  .perf-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ UNIVERSAL HEADER ═══════════════ -->
+<header class="vn-header">
+  <a class="vn-logo" href="index.html">
+    <div class="vn-logo-icon">
+      <i data-lucide="cloud-rain" style="width:20px;height:20px;"></i>
+    </div>
+    <div>
+      <div class="vn-logo-text">HYDRO<span>SHIELD</span></div>
+      <div class="vn-logo-sub">Early Warning &amp; Inundation Platform</div>
+    </div>
+  </a>
+
+  <div class="vn-header-center">
+    <span>District:</span>
+    <span class="highlight">Indore, Madhya Pradesh</span>
+    <span class="sep">|</span>
+    <span>Monsoon Ops 2024</span>
+    <span class="sep">|</span>
+    <span>Updated: <span class="highlight">15:36 IST</span></span>
+  </div>
+
+  <div class="vn-header-right">
+    <div class="vn-header-icon-btn" title="4 Active Alerts" onclick="window.location.href='alerts.html'">
+      <i data-lucide="bell" style="width:16px;height:16px;"></i>
+      <div class="badge-dot"></div>
+    </div>
+    <div class="vn-header-user">
+      <div class="vn-avatar">RS</div>
+      <span>Rajesh Sharma</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ UNIVERSAL SIDEBAR ═══════════════ -->
+<nav class="vn-sidebar">
+  <div class="vn-sidebar-nav">
+    <div class="vn-nav-section-title">Navigation</div>
+    <a href="index.html" class="vn-nav-link">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Operations Dashboard</span>
+    </a>
+    <a href="rainfall.html" class="vn-nav-link">
+      <i data-lucide="cloud-rain"></i>
+      <span>Rainfall Intelligence</span>
+    </a>
+    <a href="inundation.html" class="vn-nav-link">
+      <i data-lucide="waves"></i>
+      <span>Inundation Map</span>
+    </a>
+    <a href="alerts.html" class="vn-nav-link">
+      <i data-lucide="bell-ring"></i>
+      <span>Alerts &amp; Triage</span>
+      <span class="vn-nav-badge">4</span>
+    </a>
+    <a href="assets.html" class="vn-nav-link">
+      <i data-lucide="building-2"></i>
+      <span>Critical Infrastructure</span>
+    </a>
+    <a href="analytics.html" class="vn-nav-link active">
+      <i data-lucide="bar-chart-3"></i>
+      <span>Analytics &amp; Verification</span>
+    </a>
+  </div>
+
+  <div class="vn-sidebar-sources">
+    <div class="vn-nav-section-title" style="padding:0 0 6px;">Live Feeds</div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>NASA IMERG Satellite</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>IMD Doppler Radar</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>ECMWF NWP (0.1°)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>Ground Gauge Mesh (14/16)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot warn"></span>
+      <span>CWC River Gauge</span>
+      <span class="vn-source-tag" style="color:var(--warning);">DELAY</span>
+    </div>
+  </div>
+
+  <div class="vn-sidebar-footer">
+    Model Run: <strong>15:00 IST (EPS)</strong><br />
+    Lead Time: <strong>+72h Horizon</strong>
+  </div>
+</nav>
+
+<!-- ═══════════════ MAIN VIEWPORT ═══════════════ -->
+<main class="vn-main">
+  <div class="vn-content">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <div class="page-title">Analytics & Model Performance</div>
+      <div class="page-sub">Validation metrics • Historical accuracy • Confidence calibration</div>
+    </div>
+    <div class="flex gap-2">
+      <select class="form-control" style="width:auto;padding:5px 10px;font-size:12px">
+        <option>Last 30 days</option><option>Last 90 days</option><option>2024 Monsoon Season</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TOP PERF CARDS -->
+  <div class="perf-grid">
+    <div class="perf-card"><div class="perf-val success" style="color:var(--success)">87%</div><div class="perf-label">Overall Detection Rate (POD)</div></div>
+    <div class="perf-card"><div class="perf-val" style="color:var(--warning)">14%</div><div class="perf-label">False Alarm Rate (FAR)</div></div>
+    <div class="perf-card"><div class="perf-val" style="color:var(--success)">2.4h</div><div class="perf-label">Avg. Lead Time (threshold exceed.)</div></div>
+    <div class="perf-card"><div class="perf-val" style="color:var(--success)">0.76</div><div class="perf-label">CSI (Critical Success Index)</div></div>
+    <div class="perf-card"><div class="perf-val" style="color:var(--info)">0.82</div><div class="perf-label">Nash-Sutcliffe (Discharge)</div></div>
+    <div class="perf-card"><div class="perf-val" style="color:var(--success)">0.91</div><div class="perf-label">ROC-AUC (Flood Event)</div></div>
+  </div>
+
+  <div class="analytics-grid">
+    <!-- Rainfall Forecast Error -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Rainfall Forecast Error by Lead Time</span></div>
+      <div class="card-body"><canvas id="forecastErrorChart" height="120"></canvas></div>
+    </div>
+
+    <!-- Model Comparison -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Model Comparison (CSI @ 50mm/6h)</span></div>
+      <div class="card-body"><canvas id="modelCompChart" height="120"></canvas></div>
+    </div>
+
+    <!-- Reliability / Calibration -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Reliability Diagram (Flood Prediction)</span></div>
+      <div class="card-body">
+        <canvas id="reliabilityChart" height="120"></canvas>
+        <div style="margin-top:8px;font-size:11px;color:var(--muted)">Well-calibrated model stays close to the diagonal. Overconfidence → curve below diagonal.</div>
+      </div>
+    </div>
+
+    <!-- Confusion / Metrics -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Detection Metrics by Severity Threshold</span></div>
+      <div class="card-body">
+        <div class="metric-row"><span class="metric-name">Heavy (25mm/1h)</span><span class="metric-val success" style="color:var(--success)">POD 91%</span><div class="metric-bar-wrap"><div class="metric-bar" style="background:var(--success);width:91%"></div></div></div>
+        <div class="metric-row"><span class="metric-name">Very Heavy (50mm/3h)</span><span class="metric-val" style="color:var(--info)">POD 87%</span><div class="metric-bar-wrap"><div class="metric-bar" style="background:var(--info);width:87%"></div></div></div>
+        <div class="metric-row"><span class="metric-name">Extreme (64mm/6h)</span><span class="metric-val" style="color:var(--warning)">POD 79%</span><div class="metric-bar-wrap"><div class="metric-bar" style="background:var(--warning);width:79%"></div></div></div>
+        <div class="metric-row"><span class="metric-name">Flash Flood (100mm/6h)</span><span class="metric-val" style="color:var(--error)">POD 71%</span><div class="metric-bar-wrap"><div class="metric-bar" style="background:var(--error);width:71%"></div></div></div>
+        <hr style="margin:12px 0;border-color:var(--border)">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--muted)">Inundation Metrics</div>
+        <div class="metric-row"><span class="metric-name">Flood IoU (map overlap)</span><span class="metric-val" style="color:var(--success)">0.74</span><div class="metric-bar-wrap"><div class="metric-bar" style="background:var(--success);width:74%"></div></div></div>
+        <div class="metric-row"><span class="metric-name">Depth MAE</span><span class="metric-val" style="color:var(--info)">0.12m</span><div class="metric-bar-wrap"><div class="metric-bar" style="background:var(--info);width:80%"></div></div></div>
+        <div class="metric-row"><span class="metric-name">Confidence Calibration Error</span><span class="metric-val" style="color:var(--success)">0.04</span><div class="metric-bar-wrap"><div class="metric-bar" style="background:var(--success);width:96%"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Historical Events -->
+    <div class="card" style="grid-column:1/-1">
+      <div class="card-header"><span class="card-title">Historical Event Performance (2024 Monsoon)</span></div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Event Date</th><th>Type</th><th>Peak Rainfall (mm)</th><th>POD</th><th>FAR</th><th>Lead Time</th><th>Inundation IoU</th><th>Overall</th></tr></thead>
+          <tbody>
+            <tr><td>12 Jul 2024</td><td>Flash Flood – Ward 23</td><td>87 mm / 3h</td><td>89%</td><td>11%</td><td>2.8h</td><td>0.78</td><td><span class="badge success">Excellent</span></td></tr>
+            <tr><td>29 Jul 2024</td><td>River Flooding – Khan</td><td>134 mm / 6h</td><td>93%</td><td>9%</td><td>3.4h</td><td>0.82</td><td><span class="badge success">Excellent</span></td></tr>
+            <tr><td>15 Aug 2024</td><td>Urban Inundation</td><td>61 mm / 2h</td><td>82%</td><td>16%</td><td>1.9h</td><td>0.69</td><td><span class="badge info">Good</span></td></tr>
+            <tr><td>3 Sep 2024</td><td>Flash Flood – Ward 8</td><td>72 mm / 3h</td><td>78%</td><td>19%</td><td>1.6h</td><td>0.65</td><td><span class="badge info">Good</span></td></tr>
+            <tr><td>18 Sep 2024</td><td>Multi-ward Inundation</td><td>108 mm / 6h</td><td>91%</td><td>12%</td><td>2.9h</td><td>0.76</td><td><span class="badge success">Excellent</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+  </div><!-- /vn-content -->
+
+  <!-- UNIVERSAL FOOTER -->
+  <footer class="vn-footer">
+    <span><strong>HydroShield v1.0</strong> · Smart India Hackathon Early Warning Prototype</span>
+    <span>Telemetry: IMD Doppler Radar · NASA IMERG · ECMWF EPS · CWC River Gauges</span>
+    <span>District Emergency Operations Center, Indore</span>
+  </footer>
+</main>
+
+<script>
+// Forecast error chart
+const errCtx = document.getElementById('forecastErrorChart').getContext('2d');
+const errChart = new Chart(errCtx, {
+  type:'bar',
+  data:{
+    labels:['+1h','+2h','+3h','+6h','+12h','+24h'],
+    datasets:[
+      { label:'RMSE (mm)', data:[4.2,6.8,9.1,14.3,19.7,28.4], backgroundColor:'rgba(47,111,149,0.8)', borderRadius:4 },
+      { label:'MAE (mm)',  data:[2.8,4.6,6.4,10.1,14.2,21.5], backgroundColor:'rgba(36,122,82,0.7)', borderRadius:4 },
+    ]
+  },
+  options:{ responsive:true, plugins:{ legend:{ labels:{ font:{size:11} } } }, scales:{ y:{ beginAtZero:true, ticks:{font:{size:11}} }, x:{ticks:{font:{size:11}}} } }
+});
+
+// Model comparison
+const modelCtx = document.getElementById('modelCompChart').getContext('2d');
+new Chart(modelCtx, {
+  type:'bar',
+  data:{
+    labels:['HydroShield\n(ML Fusion)','ECMWF\nHRES Only','Optical\nFlow','Persistence'],
+    datasets:[{ label:'CSI Score', data:[0.76,0.61,0.54,0.38], backgroundColor:['#123B5D','#2F6F95','#C98616','#667482'], borderRadius:6 }]
+  },
+  options:{ responsive:true, plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true, max:1, ticks:{font:{size:11}} }, x:{ticks:{font:{size:10}}} } }
+});
+
+// Reliability diagram
+const relCtx = document.getElementById('reliabilityChart').getContext('2d');
+new Chart(relCtx, {
+  type:'line',
+  data:{
+    labels:[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],
+    datasets:[
+      { label:'Perfect Calibration', data:[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0], borderColor:'#D7DEE5', borderDash:[4,4], borderWidth:1.5, pointRadius:0 },
+      { label:'HydroShield', data:[0,0.09,0.19,0.28,0.41,0.52,0.63,0.72,0.81,0.91,0.98], borderColor:'#123B5D', backgroundColor:'rgba(18,59,93,0.08)', borderWidth:2.5, fill:false, tension:0.3, pointRadius:4 }
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{ legend:{ labels:{ font:{size:11} } } },
+    scales:{
+      x:{ title:{display:true,text:'Predicted Probability',font:{size:11}}, ticks:{font:{size:11}} },
+      y:{ title:{display:true,text:'Observed Frequency',font:{size:11}}, ticks:{font:{size:11}}, beginAtZero:true, max:1 }
+    }
+  }
+});
+// Time filter dropdown
+const timeSelect = document.querySelector('select.form-control');
+if (timeSelect) {
+  timeSelect.addEventListener('change', (e) => {
+    const val = e.target.value;
+    const factor = val.includes('90') ? 1.05 : val.includes('Monsoon') ? 1.12 : 1.0;
+    
+    // Update RMSE/MAE
+    errChart.data.datasets[0].data = [4.2, 6.8, 9.1, 14.3, 19.7, 28.4].map(v => +(v * factor).toFixed(1));
+    errChart.data.datasets[1].data = [2.8, 4.6, 6.4, 10.1, 14.2, 21.5].map(v => +(v * factor).toFixed(1));
+    errChart.update();
+
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#247A52;color:#fff;padding:10px 18px;border-radius:6px;font-weight:600;font-size:12px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+    toast.textContent = `✓ Metrics recomputed for: ${val}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+  });
+}
+
+lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "district": "Indore, Madhya Pradesh",
+  "updated": "15:36 IST",
+  "status": "ACTIVE",
+  "timeline_hour": 0,
+  "kpis": [
+    { "label": "Rainfall (6h)", "value": "91 mm", "sub": "Extreme", "color": "severe" },
+    { "label": "Flood Risk", "value": "68%", "sub": "HIGH", "color": "warning" },
+    { "label": "Population at Risk", "value": "12,400", "sub": "4 wards", "color": "warning" },
+    { "label": "Assets at Risk", "value": "7", "sub": "Hospitals, roads", "color": "error" }
+  ],
+  "timeline": [
+    { "hour": 0, "label": "Now",  "rainfall": 91, "flood_risk": 68, "pop_risk": 12400, "assets_risk": 7,  "color_zone": "#C98616" },
+    { "hour": 1, "label": "+1h", "rainfall": 108, "flood_risk": 74, "pop_risk": 15200, "assets_risk": 9,  "color_zone": "#B33A3A" },
+    { "hour": 2, "label": "+2h", "rainfall": 127, "flood_risk": 82, "pop_risk": 18700, "assets_risk": 12, "color_zone": "#7A1F1F" },
+    { "hour": 3, "label": "+3h", "rainfall": 138, "flood_risk": 85, "pop_risk": 21000, "assets_risk": 14, "color_zone": "#7A1F1F" },
+    { "hour": 6, "label": "+6h", "rainfall": 142, "flood_risk": 79, "pop_risk": 19500, "assets_risk": 11, "color_zone": "#B33A3A" }
+  ],
+  "alerts": [
+    { "time": "15:12", "area": "Ward 23 – Vijay Nagar", "type": "Flood Warning", "severity": "SEVERE",   "prob": "82%", "status": "ACTIVE" },
+    { "time": "14:58", "area": "Ward 8 – Rajwada",      "type": "Heavy Rainfall", "severity": "HIGH",     "prob": "71%", "status": "ACTIVE" },
+    { "time": "14:32", "area": "Ward 15 – Bhawarkuan",  "type": "Flash Flood",    "severity": "HIGH",     "prob": "67%", "status": "MONITORING" },
+    { "time": "13:55", "area": "Ward 31 – Palasia",     "type": "Road Flood",     "severity": "MODERATE", "prob": "54%", "status": "MONITORING" }
+  ]
+}

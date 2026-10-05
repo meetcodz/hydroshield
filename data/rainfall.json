@@ -1,0 +1,23 @@
+{
+  "stations": [
+    { "id": "IMD-IND-01", "name": "Rajwada Station",     "lat": 22.7196, "lon": 75.8577, "rainfall_1h": 28, "rainfall_3h": 61, "rainfall_6h": 91,  "status": "ACTIVE" },
+    { "id": "IMD-IND-02", "name": "Vijay Nagar Station", "lat": 22.7524, "lon": 75.8929, "rainfall_1h": 34, "rainfall_3h": 78, "rainfall_6h": 112, "status": "ACTIVE" },
+    { "id": "IMD-IND-03", "name": "Palasia Station",     "lat": 22.7293, "lon": 75.8836, "rainfall_1h": 19, "rainfall_3h": 44, "rainfall_6h": 67,  "status": "ACTIVE" },
+    { "id": "IMD-IND-04", "name": "Bhawarkuan Station",  "lat": 22.6985, "lon": 75.8701, "rainfall_1h": 22, "rainfall_3h": 53, "rainfall_6h": 79,  "status": "ACTIVE" },
+    { "id": "SAT-IMERG",  "name": "IMERG Satellite",     "lat": 22.7196, "lon": 75.8577, "rainfall_1h": 31, "rainfall_3h": 68, "rainfall_6h": 97,  "status": "ACTIVE" }
+  ],
+  "hourly": [
+    { "hour": "09:00", "observed": 4,  "radar": 5,  "satellite": 4,  "nwp": 3  },
+    { "hour": "10:00", "observed": 8,  "radar": 9,  "satellite": 8,  "nwp": 7  },
+    { "hour": "11:00", "observed": 14, "radar": 15, "satellite": 13, "nwp": 12 },
+    { "hour": "12:00", "observed": 19, "radar": 20, "satellite": 18, "nwp": 17 },
+    { "hour": "13:00", "observed": 24, "radar": 26, "satellite": 23, "nwp": 22 },
+    { "hour": "14:00", "observed": 28, "radar": 29, "satellite": 27, "nwp": 26 },
+    { "hour": "15:00", "observed": 34, "radar": 35, "satellite": 33, "nwp": 32 },
+    { "hour": "16:00", "observed": null,"radar": 38, "satellite": 36, "nwp": 40 },
+    { "hour": "17:00", "observed": null,"radar": 32, "satellite": 30, "nwp": 35 },
+    { "hour": "18:00", "observed": null,"radar": 26, "satellite": 25, "nwp": 28 },
+    { "hour": "19:00", "observed": null,"radar": 18, "satellite": 17, "nwp": 20 },
+    { "hour": "20:00", "observed": null,"radar": 12, "satellite": 11, "nwp": 13 }
+  ]
+}

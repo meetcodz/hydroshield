@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inundation Map – HydroShield</title>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ─── RESET & BASE ────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #F4F6F8;
+      color: #17212B;
+      font-size: 13px;
+    }
+
+    /* ─── HEADER ──────────────────────────────────────────────────── */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0; height: 64px;
+      background: #123B5D;
+      display: flex; align-items: center; padding: 0 24px;
+      z-index: 1100; gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .header-brand { display: flex; align-items: center; gap: 10px; }
+    .header-logo {
+      width: 36px; height: 36px; background: #2F6F95;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .header-logo svg { color: #fff; }
+    .header-title { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .header-subtitle { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 400; }
+    .header-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.15); margin: 0 12px; }
+    .header-meta { display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.7); font-size: 12px; }
+    .header-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #247A52; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+    .header-time { color: rgba(255,255,255,0.6); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .header-btn {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+      display: flex; align-items: center; gap: 6px; font-family: inherit;
+    }
+    .header-btn:hover { background: rgba(255,255,255,0.18); }
+    .header-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: #2F6F95;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+
+    /* ─── SIDEBAR ─────────────────────────────────────────────────── */
+    .sidebar {
+      position: fixed; top: 64px; left: 0; bottom: 0; width: 240px;
+      background: #fff; border-right: 1px solid #D7DEE5;
+      display: flex; flex-direction: column;
+      z-index: 1000; overflow-y: auto;
+    }
+    .sidebar-section { padding: 16px 12px 6px; }
+    .sidebar-label {
+      font-size: 10px; font-weight: 600; color: #667482;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      padding: 0 8px; margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 6px; cursor: pointer;
+      color: #667482; font-size: 13px; font-weight: 500;
+      text-decoration: none; transition: background 0.15s, color 0.15s;
+      margin-bottom: 1px;
+    }
+    .nav-item:hover { background: #F4F6F8; color: #17212B; }
+    .nav-item.active { background: #EBF2F8; color: #123B5D; font-weight: 600; }
+    .nav-item.active svg { color: #2F6F95; }
+    .nav-item svg { flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px;
+      background: #B33A3A; color: #fff; border-radius: 9px;
+      font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    .sidebar-footer {
+      margin-top: auto; padding: 12px; border-top: 1px solid #D7DEE5;
+    }
+    .sidebar-user {
+      display: flex; align-items: center; gap: 10px; padding: 8px;
+      border-radius: 6px; cursor: pointer;
+    }
+    .sidebar-user:hover { background: #F4F6F8; }
+    .sidebar-user-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: #EBF2F8;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #2F6F95;
+    }
+    .sidebar-user-name { font-size: 13px; font-weight: 600; color: #17212B; }
+    .sidebar-user-role { font-size: 11px; color: #667482; }
+
+    /* ─── MAIN WRAPPER ────────────────────────────────────────────── */
+    .main-wrapper {
+      margin-left: var(--sidebar-width, 250px);
+      padding-top: var(--header-height, 64px);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ─── CONTROL BAR ─────────────────────────────────────────────── */
+    .control-bar {
+      background: #fff;
+      border-bottom: 1px solid #D7DEE5;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-shrink: 0;
+      height: 56px;
+    }
+    .cb-group { display: flex; align-items: center; gap: 4px; }
+    .cb-label { font-size: 11px; font-weight: 600; color: #667482; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 6px; }
+    .layer-btn {
+      padding: 5px 11px; border-radius: 6px; border: 1px solid #D7DEE5;
+      background: #F4F6F8; color: #667482; font-size: 12px; font-weight: 500;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .layer-btn:hover { background: #EBF2F8; color: #17212B; border-color: #B8C8D8; }
+    .layer-btn.active { background: #123B5D; color: #fff; border-color: #123B5D; }
+    .cb-sep { width: 1px; height: 28px; background: #D7DEE5; margin: 0 6px; }
+    .time-btn {
+      padding: 5px 12px; border-radius: 20px; border: 1px solid #D7DEE5;
+      background: #F4F6F8; color: #667482; font-size: 12px; font-weight: 500;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .time-btn:hover { background: #EBF2F8; color: #17212B; }
+    .time-btn.active { background: #2F6F95; color: #fff; border-color: #2F6F95; }
+    .cb-legend { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #667482; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+
+    /* ─── CONTENT AREA ────────────────────────────────────────────── */
+    .content-area {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ─── MAP CONTAINER ───────────────────────────────────────────── */
+    .map-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    .map-overlay-badge {
+      position: absolute; top: 12px; left: 12px; z-index: 500;
+      background: rgba(18, 59, 93, 0.92); color: #fff;
+      padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 7px;
+      backdrop-filter: blur(4px);
+    }
+    .map-overlay-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: #C98616; }
+    .map-time-display {
+      position: absolute; bottom: 12px; left: 12px; z-index: 500;
+      background: rgba(255,255,255,0.95); border: 1px solid #D7DEE5;
+      padding: 6px 12px; border-radius: 6px; font-size: 11px; color: #667482;
+      font-weight: 500;
+    }
+
+    /* ─── DETAIL PANEL ────────────────────────────────────────────── */
+    .detail-panel {
+      width: 340px;
+      flex-shrink: 0;
+      background: #fff;
+      border-left: 1px solid #D7DEE5;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .detail-panel-inner {
+      overflow-y: auto;
+      flex: 1;
+      padding-bottom: 20px;
+    }
+    .detail-panel-inner::-webkit-scrollbar { width: 5px; }
+    .detail-panel-inner::-webkit-scrollbar-track { background: transparent; }
+    .detail-panel-inner::-webkit-scrollbar-thumb { background: #D7DEE5; border-radius: 3px; }
+
+    /* Empty state */
+    .detail-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; gap: 12px; color: #667482; padding: 40px;
+    }
+    .detail-empty svg { color: #D7DEE5; }
+    .detail-empty-title { font-size: 14px; font-weight: 600; color: #17212B; }
+    .detail-empty-sub { font-size: 12px; text-align: center; line-height: 1.5; }
+
+    /* Panel sections */
+    .dp-header {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid #D7DEE5;
+      background: #F4F6F8;
+    }
+    .dp-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .dp-ward-name { font-size: 15px; font-weight: 700; color: #17212B; line-height: 1.3; }
+    .dp-ward-sub { font-size: 11px; color: #667482; margin-top: 2px; }
+
+    .badge {
+      display: inline-flex; align-items: center; padding: 3px 8px;
+      border-radius: 4px; font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+    .badge-severe { background: #7A1F1F; color: #fff; }
+    .badge-high { background: #B33A3A; color: #fff; }
+    .badge-medium { background: #C98616; color: #fff; }
+    .badge-low { background: #247A52; color: #fff; }
+    .badge-info { background: #286D91; color: #fff; }
+
+    .dp-section { padding: 14px 16px; border-bottom: 1px solid #F4F6F8; }
+    .dp-section-title {
+      font-size: 10px; font-weight: 700; color: #667482;
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+    }
+
+    /* Risk Metrics */
+    .risk-big-number {
+      font-size: 36px; font-weight: 700; color: #B33A3A; line-height: 1;
+      margin-bottom: 6px;
+    }
+    .risk-big-severe { color: #7A1F1F; }
+    .progress-bar-wrap { background: #F4F6F8; border-radius: 4px; height: 8px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+    .progress-red { background: #B33A3A; }
+    .progress-severe { background: #7A1F1F; }
+    .progress-orange { background: #C98616; }
+    .progress-green { background: #247A52; }
+
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .metric-card {
+      background: #F4F6F8; border-radius: 6px; padding: 10px 12px;
+    }
+    .metric-card-label { font-size: 10px; color: #667482; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .metric-card-value { font-size: 13px; font-weight: 700; color: #17212B; }
+    .metric-card-value.orange { color: #C98616; }
+
+    /* SHAP bars */
+    .shap-item { margin-bottom: 8px; }
+    .shap-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+    .shap-factor { font-size: 12px; color: #17212B; font-weight: 500; }
+    .shap-value { font-size: 11px; color: #667482; }
+    .shap-bar-wrap { background: #EBF2F8; border-radius: 3px; height: 6px; overflow: hidden; }
+    .shap-bar-fill { height: 100%; border-radius: 3px; background: #2F6F95; transition: width 0.6s ease; }
+
+    /* Affected infrastructure */
+    .infra-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid #F4F6F8;
+    }
+    .infra-item:last-child { border-bottom: none; }
+    .infra-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+    .infra-name { font-size: 12px; font-weight: 600; color: #17212B; }
+    .infra-dist { font-size: 11px; color: #667482; }
+    .infra-badge { margin-left: auto; }
+
+    /* Actions */
+    .action-list { list-style: none; }
+    .action-item {
+      display: flex; gap: 10px; padding: 7px 0;
+      border-bottom: 1px solid #F4F6F8; align-items: flex-start;
+    }
+    .action-item:last-child { border-bottom: none; }
+    .action-num {
+      width: 20px; height: 20px; border-radius: 50%; background: #EBF2F8;
+      color: #2F6F95; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .action-text { font-size: 12px; color: #17212B; line-height: 1.5; }
+
+    /* CTA button */
+    .dp-footer { padding: 14px 16px; border-top: 1px solid #D7DEE5; }
+    .btn-warn {
+      width: 100%; padding: 10px; background: #B33A3A; color: #fff;
+      border: none; border-radius: 6px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit; display: flex; align-items: center;
+      justify-content: center; gap: 8px; transition: background 0.15s;
+    }
+    .btn-warn:hover { background: #7A1F1F; }
+    .btn-warn-fired {
+      background: #247A52 !important;
+    }
+
+    /* Leaflet label styling */
+    .flood-label {
+      background: transparent; border: none; box-shadow: none;
+      font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
+      color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      white-space: nowrap; pointer-events: none;
+    }
+
+    /* scrollbar for main */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D7DEE5; border-radius: 3px; }
+  </style>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══════════════ UNIVERSAL HEADER ═══════════════ -->
+<header class="vn-header">
+  <a class="vn-logo" href="index.html">
+    <div class="vn-logo-icon">
+      <i data-lucide="cloud-rain" style="width:20px;height:20px;"></i>
+    </div>
+    <div>
+      <div class="vn-logo-text">HYDRO<span>SHIELD</span></div>
+      <div class="vn-logo-sub">Early Warning &amp; Inundation Platform</div>
+    </div>
+  </a>
+
+  <div class="vn-header-center">
+    <span>District:</span>
+    <span class="highlight">Indore, Madhya Pradesh</span>
+    <span class="sep">|</span>
+    <span>Monsoon Ops 2024</span>
+    <span class="sep">|</span>
+    <span>Updated: <span class="highlight" id="clock">15:36 IST</span></span>
+  </div>
+
+  <div class="vn-header-right">
+    <div class="vn-header-icon-btn" title="4 Active Alerts" onclick="window.location.href='alerts.html'">
+      <i data-lucide="bell" style="width:16px;height:16px;"></i>
+      <div class="badge-dot"></div>
+    </div>
+    <div class="vn-header-user">
+      <div class="vn-avatar">RS</div>
+      <span>Rajesh Sharma</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ UNIVERSAL SIDEBAR ═══════════════ -->
+<nav class="vn-sidebar">
+  <div class="vn-sidebar-nav">
+    <div class="vn-nav-section-title">Navigation</div>
+    <a href="index.html" class="vn-nav-link">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Operations Dashboard</span>
+    </a>
+    <a href="rainfall.html" class="vn-nav-link">
+      <i data-lucide="cloud-rain"></i>
+      <span>Rainfall Intelligence</span>
+    </a>
+    <a href="inundation.html" class="vn-nav-link active">
+      <i data-lucide="waves"></i>
+      <span>Inundation Map</span>
+    </a>
+    <a href="alerts.html" class="vn-nav-link">
+      <i data-lucide="bell-ring"></i>
+      <span>Alerts &amp; Triage</span>
+      <span class="vn-nav-badge">4</span>
+    </a>
+    <a href="assets.html" class="vn-nav-link">
+      <i data-lucide="building-2"></i>
+      <span>Critical Infrastructure</span>
+    </a>
+    <a href="analytics.html" class="vn-nav-link">
+      <i data-lucide="bar-chart-3"></i>
+      <span>Analytics &amp; Verification</span>
+    </a>
+  </div>
+
+  <div class="vn-sidebar-sources">
+    <div class="vn-nav-section-title" style="padding:0 0 6px;">Live Feeds</div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>NASA IMERG Satellite</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>IMD Doppler Radar</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>ECMWF NWP (0.1°)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>Ground Gauge Mesh (14/16)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot warn"></span>
+      <span>CWC River Gauge</span>
+      <span class="vn-source-tag" style="color:var(--warning);">DELAY</span>
+    </div>
+  </div>
+
+  <div class="vn-sidebar-footer">
+    Model Run: <strong>15:00 IST (EPS)</strong><br />
+    Lead Time: <strong>+72h Horizon</strong>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ MAIN WRAPPER -->
+<div class="main-wrapper">
+
+    <!-- Control Bar -->
+    <div class="control-bar">
+      <!-- Layer Toggles -->
+      <span class="cb-label">Layers</span>
+      <div class="cb-group">
+        <button class="layer-btn active" onclick="toggleLayer(this,'flood')" id="lyr-flood">
+          <i data-lucide="droplets" style="width:13px;height:13px;"></i> Flood Probability
+        </button>
+        <button class="layer-btn" onclick="toggleLayer(this,'observed')" id="lyr-observed">
+          <i data-lucide="eye" style="width:13px;height:13px;"></i> Observed Extent
+        </button>
+        <button class="layer-btn" onclick="toggleLayer(this,'infra')" id="lyr-infra">
+          <i data-lucide="building-2" style="width:13px;height:13px;"></i> Infrastructure
+        </button>
+        <button class="layer-btn" onclick="toggleLayer(this,'watershed')" id="lyr-watershed">
+          <i data-lucide="git-branch" style="width:13px;height:13px;"></i> Watersheds
+        </button>
+      </div>
+
+      <div class="cb-sep"></div>
+
+      <!-- Time Selector -->
+      <span class="cb-label">Forecast</span>
+      <div class="cb-group">
+        <button class="time-btn active" onclick="setTime(this,'now')">Now</button>
+        <button class="time-btn" onclick="setTime(this,'+1h')">+1h</button>
+        <button class="time-btn" onclick="setTime(this,'+2h')">+2h</button>
+        <button class="time-btn" onclick="setTime(this,'+3h')">+3h</button>
+        <button class="time-btn" onclick="setTime(this,'+6h')">+6h</button>
+        <button class="layer-btn" id="inundation-play-btn" onclick="toggleInundationPlay()" style="margin-left:6px;gap:5px;">
+          <i data-lucide="play" id="inun-play-icon" style="width:12px;height:12px;"></i> <span id="inun-play-text">Play</span>
+        </button>
+      </div>
+
+      <!-- Legend -->
+      <div class="cb-legend">
+        <span style="font-size:10px;font-weight:700;color:#667482;text-transform:uppercase;letter-spacing:0.6px;">Risk Legend</span>
+        <div class="legend-item"><div class="legend-swatch" style="background:#247A52;"></div> Low 0–30%</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#E5A020;"></div> Med 30–60%</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#C98616;"></div> High 60–80%</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#B33A3A;"></div> Crit 80–90%</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#7A1F1F;"></div> Severe 90%+</div>
+      </div>
+    </div>
+
+    <!-- Content Area: Map + Detail Panel -->
+    <div class="content-area">
+
+      <!-- MAP -->
+      <div class="map-container">
+        <div id="map"></div>
+        <div class="map-overlay-badge">
+          <div class="dot"></div>
+          Flood Probability – Indore District
+        </div>
+        <div class="map-time-display" id="map-time-display">
+          Forecast: <strong>Now (17:45 IST)</strong>
+        </div>
+      </div>
+
+      <!-- DETAIL PANEL -->
+      <div class="detail-panel" id="detail-panel">
+        <!-- populated by JS -->
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /* ────────────────────────────────────── CLOCK */
+    function updateClock() {
+      const now = new Date();
+      const ist = new Date(now.getTime() + (5.5 * 3600000));
+      document.getElementById('clock').textContent =
+        ist.toISOString().slice(11,16) + ' IST';
+    }
+    updateClock();
+    setInterval(updateClock, 60000);
+
+    /* ────────────────────────────────────── WARD DATA */
+    const TIME_DATA = {
+      'now': {
+        ward23: { prob: 82, radius: 900, color: '#B33A3A', opacity: 0.6 },
+        ward8:  { prob: 71, radius: 700, color: '#C98616', opacity: 0.5 },
+        ward15: { prob: 67, radius: 600, color: '#C98616', opacity: 0.4 },
+        ward31: { prob: 54, radius: 500, color: '#E5A020', opacity: 0.3 },
+        ward5:  { prob: 31, radius: 400, color: '#247A52', opacity: 0.2 },
+      },
+      '+1h': {
+        ward23: { prob: 83, radius: 950, color: '#B33A3A', opacity: 0.65 },
+        ward8:  { prob: 74, radius: 750, color: '#C98616', opacity: 0.55 },
+        ward15: { prob: 68, radius: 620, color: '#C98616', opacity: 0.45 },
+        ward31: { prob: 57, radius: 520, color: '#E5A020', opacity: 0.35 },
+        ward5:  { prob: 33, radius: 420, color: '#247A52', opacity: 0.25 },
+      },
+      '+2h': {
+        ward23: { prob: 85, radius: 1100, color: '#7A1F1F', opacity: 0.72 },
+        ward8:  { prob: 78, radius: 820,  color: '#B33A3A', opacity: 0.62 },
+        ward15: { prob: 70, radius: 660,  color: '#C98616', opacity: 0.50 },
+        ward31: { prob: 61, radius: 560,  color: '#C98616', opacity: 0.40 },
+        ward5:  { prob: 36, radius: 450,  color: '#247A52', opacity: 0.28 },
+      },
+      '+3h': {
+        ward23: { prob: 88, radius: 1250, color: '#7A1F1F', opacity: 0.78 },
+        ward8:  { prob: 80, radius: 900,  color: '#B33A3A', opacity: 0.65 },
+        ward15: { prob: 73, radius: 700,  color: '#C98616', opacity: 0.55 },
+        ward31: { prob: 64, radius: 600,  color: '#C98616', opacity: 0.45 },
+        ward5:  { prob: 39, radius: 480,  color: '#E5A020', opacity: 0.30 },
+      },
+      '+6h': {
+        ward23: { prob: 91, radius: 1400, color: '#7A1F1F', opacity: 0.82 },
+        ward8:  { prob: 84, radius: 1000, color: '#B33A3A', opacity: 0.70 },
+        ward15: { prob: 78, radius: 780,  color: '#B33A3A', opacity: 0.60 },
+        ward31: { prob: 69, radius: 660,  color: '#C98616', opacity: 0.50 },
+        ward5:  { prob: 44, radius: 520,  color: '#E5A020', opacity: 0.35 },
+      },
+    };
+
+    const WARD_META = {
+      ward23: { lat: 22.7524, lng: 75.8929, name: 'Ward 23 – Vijay Nagar', id: 'ward23' },
+      ward8:  { lat: 22.7196, lng: 75.8577, name: 'Ward 8 – Old Palasia',   id: 'ward8' },
+      ward15: { lat: 22.6985, lng: 75.8701, name: 'Ward 15 – Rajwada',      id: 'ward15' },
+      ward31: { lat: 22.7293, lng: 75.8836, name: 'Ward 31 – Nipania',      id: 'ward31' },
+      ward5:  { lat: 22.7400, lng: 75.8650, name: 'Ward 5 – Annapurna',     id: 'ward5' },
+    };
+
+    const INFRA_MARKERS = [
+      { lat: 22.7196, lng: 75.8577, type: 'hospital', name: 'MY Hospital',       icon: '🏥' },
+      { lat: 22.7280, lng: 75.8860, type: 'school',   name: 'Vijay Nagar School', icon: '🏫' },
+      { lat: 22.7400, lng: 75.8650, type: 'school',   name: 'Annapurna School',   icon: '🏫' },
+      { lat: 22.7350, lng: 75.8720, type: 'bridge',   name: 'Khan River Bridge',  icon: '🌉' },
+      { lat: 22.7100, lng: 75.8600, type: 'power',    name: 'Substation 1',       icon: '⚡' },
+    ];
+
+    /* ────────────────────────────────────── MAP INIT */
+    const map = L.map('map', {
+      center: [22.7196, 75.8577],
+      zoom: 13,
+      zoomControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    /* Khan River polyline */
+    const riverPoints = [
+      [22.700, 75.850], [22.705, 75.856], [22.710, 75.861],
+      [22.715, 75.866], [22.720, 75.870], [22.725, 75.877],
+      [22.728, 75.882], [22.730, 75.890],
+    ];
+    const riverLine = L.polyline(riverPoints, {
+      color: '#286D91', weight: 3.5, opacity: 0.8, dashArray: null
+    }).addTo(map);
+    riverLine.bindTooltip('Khan River', { permanent: false, className: 'flood-label' });
+
+    /* Flood circles layer group */
+    let currentTime = 'now';
+    let activeCircles = {};
+    let labelMarkers = {};
+    let infraLayerGroup = L.layerGroup();
+    let watershedLayerGroup = L.layerGroup();
+    let observedLayerGroup = L.layerGroup();
+    let activeWard = null;
+
+    /* Draw/update flood circles */
+    function drawFloodCircles(timeKey) {
+      const td = TIME_DATA[timeKey];
+      Object.keys(WARD_META).forEach(wid => {
+        const meta = WARD_META[wid];
+        const d = td[wid];
+
+        if (activeCircles[wid]) {
+          map.removeLayer(activeCircles[wid]);
+        }
+        if (labelMarkers[wid]) {
+          map.removeLayer(labelMarkers[wid]);
+        }
+
+        const circle = L.circle([meta.lat, meta.lng], {
+          radius: d.radius,
+          color: d.color,
+          fillColor: d.color,
+          fillOpacity: d.opacity,
+          weight: 1.5,
+        }).addTo(map);
+
+        circle.on('click', function() {
+          selectWard(wid);
+        });
+
+        // Label
+        const labelIcon = L.divIcon({
+          className: 'flood-label',
+          html: `<span style="font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.9);">${d.prob}%</span>`,
+          iconSize: [40, 20],
+          iconAnchor: [20, 10],
+        });
+        const label = L.marker([meta.lat, meta.lng], { icon: labelIcon, interactive: false }).addTo(map);
+
+        activeCircles[wid] = circle;
+        labelMarkers[wid] = label;
+      });
+    }
+
+    /* Infrastructure markers */
+    function addInfraMarkers() {
+      infraLayerGroup.clearLayers();
+      INFRA_MARKERS.forEach(m => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="background:#fff;border:2px solid #D7DEE5;border-radius:6px;padding:3px 5px;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.15);cursor:pointer;">${m.icon}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+        const marker = L.marker([m.lat, m.lng], { icon }).addTo(infraLayerGroup);
+        marker.bindTooltip(`<strong>${m.name}</strong>`, { className: '' });
+      });
+    }
+
+    /* Watershed approximation */
+    function addWatersheds() {
+      watershedLayerGroup.clearLayers();
+      const ws1 = [[22.74, 75.86], [22.76, 75.87], [22.755, 75.90], [22.73, 75.91], [22.72, 75.89], [22.74, 75.86]];
+      const ws2 = [[22.70, 75.85], [22.72, 75.86], [22.715, 75.88], [22.70, 75.88], [22.69, 75.865], [22.70, 75.85]];
+      L.polygon(ws1, { color: '#2F6F95', fillColor: '#2F6F95', fillOpacity: 0.08, weight: 1.5, dashArray: '5,4' }).addTo(watershedLayerGroup).bindTooltip('Khanpura Watershed');
+      L.polygon(ws2, { color: '#286D91', fillColor: '#286D91', fillOpacity: 0.06, weight: 1.5, dashArray: '5,4' }).addTo(watershedLayerGroup).bindTooltip('Rajwada Watershed');
+    }
+
+    /* Observed extent */
+    function addObservedExtent() {
+      observedLayerGroup.clearLayers();
+      const obs = [[22.720, 75.855], [22.728, 75.870], [22.722, 75.878], [22.715, 75.872], [22.710, 75.860], [22.720, 75.855]];
+      L.polygon(obs, { color: '#7A1F1F', fillColor: '#B33A3A', fillOpacity: 0.15, weight: 2, dashArray: '6,3' }).addTo(observedLayerGroup).bindTooltip('Observed Flood Extent (2024-08-10)');
+    }
+
+    addInfraMarkers();
+    addWatersheds();
+    addObservedExtent();
+
+    drawFloodCircles('now');
+
+    /* ────────────────────────────────────── LAYER TOGGLES */
+    const layerMap = {
+      'observed': observedLayerGroup,
+      'infra': infraLayerGroup,
+      'watershed': watershedLayerGroup,
+    };
+    const layerStates = { flood: true, observed: false, infra: false, watershed: false };
+
+    function toggleLayer(btn, key) {
+      layerStates[key] = !layerStates[key];
+      btn.classList.toggle('active', layerStates[key]);
+      if (key === 'flood') {
+        Object.values(activeCircles).forEach(c => layerStates.flood ? map.addLayer(c) : map.removeLayer(c));
+        Object.values(labelMarkers).forEach(l => layerStates.flood ? map.addLayer(l) : map.removeLayer(l));
+      } else {
+        const lg = layerMap[key];
+        if (layerStates[key]) { map.addLayer(lg); }
+        else { map.removeLayer(lg); }
+      }
+    }
+
+    /* ────────────────────────────────────── TIME SELECTOR */
+    const timeLabels = {
+      'now': 'Now (17:45 IST)',
+      '+1h': '+1h (18:45 IST)',
+      '+2h': '+2h (19:45 IST)',
+      '+3h': '+3h (20:45 IST)',
+      '+6h': '+6h (23:45 IST)',
+    };
+
+    let inunPlayInterval = null;
+    const timeKeys = ['now', '+1h', '+2h', '+3h', '+6h'];
+
+    function toggleInundationPlay() {
+      const btn = document.getElementById('inundation-play-btn');
+      const txt = document.getElementById('inun-play-text');
+      if (inunPlayInterval) {
+        clearInterval(inunPlayInterval);
+        inunPlayInterval = null;
+        txt.textContent = 'Play';
+        btn.classList.remove('active');
+      } else {
+        txt.textContent = 'Pause';
+        btn.classList.add('active');
+        inunPlayInterval = setInterval(() => {
+          let currIdx = timeKeys.indexOf(currentTime);
+          let nextIdx = (currIdx + 1) % timeKeys.length;
+          let nextKey = timeKeys[nextIdx];
+          const timeBtns = document.querySelectorAll('.time-btn');
+          setTime(timeBtns[nextIdx], nextKey);
+        }, 1800);
+      }
+    }
+
+    /* ────────────────────────────────────── DETAIL PANEL */
+    function selectWard(wid) {
+      activeWard = wid;
+      renderDetailPanel(wid);
+    }
+
+    function probToCategory(p) {
+      if (p >= 85) return { label: 'SEVERE', cls: 'badge-severe', barCls: 'progress-severe' };
+      if (p >= 70) return { label: 'HIGH',   cls: 'badge-high',   barCls: 'progress-red' };
+      if (p >= 50) return { label: 'MEDIUM', cls: 'badge-medium', barCls: 'progress-orange' };
+      return { label: 'LOW', cls: 'badge-low', barCls: 'progress-green' };
+    }
+
+    const WARD_DETAIL = {
+      ward23: {
+        locality: 'Vijay Nagar',
+        confidence: '87%',
+        depth: '0.45 – 0.80 m',
+        peakWindow: '18:00 – 21:00 IST',
+        factors: [
+          { name: 'Forecast Rainfall', value: '91mm', pct: 85 },
+          { name: 'Terrain Elevation', value: '552m', pct: 72 },
+          { name: 'Soil Moisture',     value: '78%',  pct: 68 },
+          { name: 'Drainage Proximity',value: '0.3km',pct: 60 },
+          { name: 'Historical Events', value: 'High', pct: 45 },
+          { name: 'Land Cover',        value: 'Urban',pct: 38 },
+        ],
+        infra: [
+          { icon: '🏥', name: 'MY Hospital',          dist: '0.4km', risk: 'HIGH',   badgeCls: 'badge-high' },
+          { icon: '🏫', name: 'Vijay Nagar School',   dist: '0.2km', risk: 'HIGH',   badgeCls: 'badge-high' },
+          { icon: '⚡', name: 'Substation 1',         dist: '0.1km', risk: 'HIGH',   badgeCls: 'badge-high' },
+          { icon: '🛣️', name: 'Ring Road',            dist: 'On zone',risk: 'SEVERE', badgeCls: 'badge-severe' },
+        ],
+        actions: [
+          'Pre-position rescue boats at Khan River bridge',
+          'Alert MY Hospital emergency ward',
+          'Issue evacuation advisory for low-lying streets',
+          'Monitor Khan River gauge (current: 4.2m, warning: 5.5m)',
+        ],
+      },
+      ward8: {
+        locality: 'Old Palasia',
+        confidence: '82%',
+        depth: '0.30 – 0.60 m',
+        peakWindow: '19:00 – 22:00 IST',
+        factors: [
+          { name: 'Forecast Rainfall', value: '84mm', pct: 78 },
+          { name: 'Terrain Elevation', value: '548m', pct: 65 },
+          { name: 'Soil Moisture',     value: '72%',  pct: 60 },
+          { name: 'Drainage Proximity',value: '0.5km',pct: 52 },
+          { name: 'Historical Events', value: 'Medium',pct: 40 },
+          { name: 'Land Cover',        value: 'Mixed', pct: 30 },
+        ],
+        infra: [
+          { icon: '🏥', name: 'MY Hospital',    dist: '0.1km', risk: 'HIGH',   badgeCls: 'badge-high' },
+          { icon: '🛣️', name: 'AB Road',        dist: '0.3km', risk: 'MEDIUM', badgeCls: 'badge-medium' },
+          { icon: '⚡', name: 'Palasia Grid',   dist: '0.6km', risk: 'MEDIUM', badgeCls: 'badge-medium' },
+        ],
+        actions: [
+          'Activate flood barriers along AB Road',
+          'Coordinate with MY Hospital for patient relocation plan',
+          'Deploy warning sirens in low-lying areas',
+          'Alert Palasia Police Station for traffic management',
+        ],
+      },
+      ward15: {
+        locality: 'Rajwada',
+        confidence: '79%',
+        depth: '0.20 – 0.50 m',
+        peakWindow: '19:30 – 22:30 IST',
+        factors: [
+          { name: 'Forecast Rainfall', value: '78mm', pct: 70 },
+          { name: 'Historical Events', value: 'High', pct: 65 },
+          { name: 'Terrain Elevation', value: '543m', pct: 58 },
+          { name: 'Soil Moisture',     value: '68%',  pct: 52 },
+          { name: 'Drainage Proximity',value: '0.7km',pct: 42 },
+          { name: 'Land Cover',        value: 'Dense Urban', pct: 36 },
+        ],
+        infra: [
+          { icon: '🏛️', name: 'Rajwada Palace',  dist: '0.1km', risk: 'MEDIUM', badgeCls: 'badge-medium' },
+          { icon: '🛣️', name: 'Rajwada Road',    dist: 'On zone',risk: 'HIGH',   badgeCls: 'badge-high' },
+          { icon: '⚡', name: 'Old City Grid',   dist: '0.4km', risk: 'MEDIUM', badgeCls: 'badge-medium' },
+        ],
+        actions: [
+          'Issue heritage structure protection alert for Rajwada Palace',
+          'Close Rajwada Road for vehicle traffic',
+          'Inform Collector office of rising risk',
+          'Monitor Saraswati drain levels upstream',
+        ],
+      },
+      ward31: {
+        locality: 'Nipania',
+        confidence: '74%',
+        depth: '0.15 – 0.35 m',
+        peakWindow: '20:00 – 23:00 IST',
+        factors: [
+          { name: 'Forecast Rainfall', value: '72mm', pct: 62 },
+          { name: 'Terrain Elevation', value: '558m', pct: 55 },
+          { name: 'Soil Moisture',     value: '65%',  pct: 48 },
+          { name: 'Drainage Proximity',value: '1.1km',pct: 38 },
+          { name: 'Historical Events', value: 'Low',  pct: 25 },
+          { name: 'Land Cover',        value: 'Mixed', pct: 20 },
+        ],
+        infra: [
+          { icon: '🏫', name: 'Nipania School',  dist: '0.5km', risk: 'MEDIUM', badgeCls: 'badge-medium' },
+          { icon: '🛣️', name: 'IDA Road',        dist: '0.3km', risk: 'LOW',    badgeCls: 'badge-low' },
+        ],
+        actions: [
+          'Issue watch advisory for Nipania area',
+          'Inspect drainage capacity along IDA Road',
+          'Notify Nipania Residential Welfare Association',
+          'Standby NDRF team at nearest position',
+        ],
+      },
+      ward5: {
+        locality: 'Annapurna',
+        confidence: '68%',
+        depth: '0.05 – 0.20 m',
+        peakWindow: '20:30 – 23:30 IST',
+        factors: [
+          { name: 'Forecast Rainfall', value: '61mm', pct: 40 },
+          { name: 'Terrain Elevation', value: '562m', pct: 35 },
+          { name: 'Soil Moisture',     value: '55%',  pct: 30 },
+          { name: 'Drainage Proximity',value: '1.5km',pct: 22 },
+          { name: 'Historical Events', value: 'Low',  pct: 15 },
+          { name: 'Land Cover',        value: 'Residential', pct: 18 },
+        ],
+        infra: [
+          { icon: '🏫', name: 'Annapurna School', dist: '0.8km', risk: 'LOW', badgeCls: 'badge-low' },
+          { icon: '🛣️', name: 'Bhanwarkua Road',  dist: '1.2km', risk: 'LOW', badgeCls: 'badge-low' },
+        ],
+        actions: [
+          'Maintain routine monitoring – low risk at current time',
+          'Check drainage cleanliness in Ward 5',
+          'Inform local councillor for preparedness update',
+          'Review +3h forecast before escalating',
+        ],
+      },
+    };
+
+    function renderDetailPanel(wid) {
+      const panel = document.getElementById('detail-panel');
+      const meta = WARD_META[wid];
+      const detail = WARD_DETAIL[wid];
+      const timeD = TIME_DATA[currentTime][wid];
+      const prob = timeD.prob;
+      const cat = probToCategory(prob);
+
+      const factorBars = detail.factors.map(f => `
+        <div class="shap-item">
+          <div class="shap-row">
+            <span class="shap-factor">${f.name} <span style="font-size:11px;color:#667482;font-weight:400;">(${f.value})</span></span>
+          </div>
+          <div class="shap-bar-wrap"><div class="shap-bar-fill" style="width:${f.pct}%;"></div></div>
+        </div>
+      `).join('');
+
+      const infraItems = detail.infra.map(i => `
+        <div class="infra-item">
+          <div class="infra-icon">${i.icon}</div>
+          <div>
+            <div class="infra-name">${i.name}</div>
+            <div class="infra-dist">${i.dist} away</div>
+          </div>
+          <div class="infra-badge"><span class="badge ${i.badgeCls}">${i.risk}</span></div>
+        </div>
+      `).join('');
+
+      const actionItems = detail.actions.map((a, i) => `
+        <li class="action-item">
+          <div class="action-num">${i+1}</div>
+          <div class="action-text">${a}</div>
+        </li>
+      `).join('');
+
+      panel.innerHTML = `
+        <div class="dp-header">
+          <div class="dp-header-row">
+            <div>
+              <div class="dp-ward-name">${meta.name}</div>
+              <div class="dp-ward-sub">Indore District · Last updated 3 min ago</div>
+            </div>
+            <span class="badge ${cat.cls}">${cat.label}</span>
+          </div>
+        </div>
+
+        <div class="detail-panel-inner">
+
+          <!-- Risk Metrics -->
+          <div class="dp-section">
+            <div class="dp-section-title">Risk Metrics</div>
+            <div class="risk-big-number ${cat.cls === 'badge-severe' ? 'risk-big-severe' : ''}">${prob}%</div>
+            <div style="margin-bottom:6px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-size:11px;color:#667482;font-weight:600;">FLOOD PROBABILITY</span>
+                <span style="font-size:11px;font-weight:700;color:#667482;">${prob}%</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill ${cat.barCls}" style="width:${prob}%;"></div>
+              </div>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <div class="metric-card-label">Confidence</div>
+                <div class="metric-card-value">${detail.confidence}</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-card-label">Expected Depth</div>
+                <div class="metric-card-value orange">${detail.depth}</div>
+              </div>
+              <div class="metric-card" style="grid-column: 1/-1;">
+                <div class="metric-card-label">Peak Risk Window</div>
+                <div class="metric-card-value">${detail.peakWindow}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contributing Factors -->
+          <div class="dp-section">
+            <div class="dp-section-title">Model Contributing Factors</div>
+            ${factorBars}
+          </div>
+
+          <!-- Affected Infrastructure -->
+          <div class="dp-section">
+            <div class="dp-section-title">Affected Infrastructure</div>
+            ${infraItems}
+          </div>
+
+          <!-- Recommended Actions -->
+          <div class="dp-section">
+            <div class="dp-section-title">Recommended Actions</div>
+            <ul class="action-list">${actionItems}</ul>
+          </div>
+
+        </div>
+
+        <div class="dp-footer">
+          <button class="btn-warn" id="warn-btn" onclick="issueWarning('${wid}')">
+            <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
+            Issue Flood Warning for ${meta.name.split('–')[0].trim()}
+          </button>
+        </div>
+      `;
+
+      // re-init lucide in the new HTML
+      lucide.createIcons();
+    }
+
+    function issueWarning(wid) {
+      const btn = document.getElementById('warn-btn');
+      if (!btn) return;
+      const zoneName = WARD_META[wid].name.split('–')[0].trim();
+      btn.innerHTML = `<i data-lucide="check-circle" style="width:16px;height:16px;"></i> Warning Issued – ${zoneName}`;
+      btn.classList.add('btn-warn-fired');
+      btn.disabled = true;
+      lucide.createIcons();
+
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#B33A3A;color:#fff;padding:12px 20px;border-radius:8px;font-weight:600;font-size:12px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;gap:12px;';
+      toast.innerHTML = `
+        <span>🚨 Flash flood alert dispatched for <strong>${zoneName}</strong></span>
+        <button style="background:white;color:#B33A3A;border:none;border-radius:4px;padding:3px 8px;font-weight:700;font-size:11px;cursor:pointer;" onclick="window.location.href='alerts.html'">View in Alerts</button>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    }
+
+    function renderEmptyPanel() {
+      const panel = document.getElementById('detail-panel');
+      panel.innerHTML = `
+        <div class="detail-empty">
+          <i data-lucide="map-pin" style="width:48px;height:48px;color:#D7DEE5;"></i>
+          <div class="detail-empty-title">No Zone Selected</div>
+          <div class="detail-empty-sub">Click a flood probability zone on the map to view detailed risk analysis, contributing factors, and recommended actions.</div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    /* ────────────────────────────────────── BOOT: load Ward 23 by default */
+    lucide.createIcons();
+    selectWard('ward23');
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+  </script>
+</body>
+</html>

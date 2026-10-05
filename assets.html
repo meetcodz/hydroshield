@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Critical Infrastructure – HydroShield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  .assets-layout { display: grid; grid-template-columns: 1fr 380px; gap: 16px; height: calc(100vh - 220px); }
+  .map-panel { position: relative; }
+  #assets-map { height: 100%; border-radius: var(--radius-md); border: 1px solid var(--border); }
+  .right-panel { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+  .risk-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-btn { padding: 4px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--muted); }
+  .filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .asset-list-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .asset-list-item:hover { background: var(--bg); }
+  .asset-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .asset-icon.hospital { background: #FDE8E8; }
+  .asset-icon.school { background: #E8F0FE; }
+  .asset-icon.bridge { background: #FFF3E0; }
+  .asset-icon.substation { background: #E8FDE8; }
+  .asset-icon.shelter { background: #E8F5E9; }
+  .asset-icon.water { background: #E3F2FD; }
+  .asset-icon.road { background: #FCE4EC; }
+  .asset-info { flex: 1; }
+  .asset-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .asset-sub { font-size: 11px; color: var(--muted); }
+  .asset-detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; }
+  .detail-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .detail-sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .map-legend { position: absolute; bottom: 20px; left: 10px; background: rgba(255,255,255,0.95); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 14px; font-size: 11px; z-index: 500; }
+  .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ UNIVERSAL HEADER ═══════════════ -->
+<header class="vn-header">
+  <a class="vn-logo" href="index.html">
+    <div class="vn-logo-icon">
+      <i data-lucide="cloud-rain" style="width:20px;height:20px;"></i>
+    </div>
+    <div>
+      <div class="vn-logo-text">HYDRO<span>SHIELD</span></div>
+      <div class="vn-logo-sub">Early Warning &amp; Inundation Platform</div>
+    </div>
+  </a>
+
+  <div class="vn-header-center">
+    <span>District:</span>
+    <span class="highlight">Indore, Madhya Pradesh</span>
+    <span class="sep">|</span>
+    <span>Monsoon Ops 2024</span>
+    <span class="sep">|</span>
+    <span>Updated: <span class="highlight">15:36 IST</span></span>
+  </div>
+
+  <div class="vn-header-right">
+    <div class="vn-header-icon-btn" title="4 Active Alerts" onclick="window.location.href='alerts.html'">
+      <i data-lucide="bell" style="width:16px;height:16px;"></i>
+      <div class="badge-dot"></div>
+    </div>
+    <div class="vn-header-user">
+      <div class="vn-avatar">RS</div>
+      <span>Rajesh Sharma</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ UNIVERSAL SIDEBAR ═══════════════ -->
+<nav class="vn-sidebar">
+  <div class="vn-sidebar-nav">
+    <div class="vn-nav-section-title">Navigation</div>
+    <a href="index.html" class="vn-nav-link">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Operations Dashboard</span>
+    </a>
+    <a href="rainfall.html" class="vn-nav-link">
+      <i data-lucide="cloud-rain"></i>
+      <span>Rainfall Intelligence</span>
+    </a>
+    <a href="inundation.html" class="vn-nav-link">
+      <i data-lucide="waves"></i>
+      <span>Inundation Map</span>
+    </a>
+    <a href="alerts.html" class="vn-nav-link">
+      <i data-lucide="bell-ring"></i>
+      <span>Alerts &amp; Triage</span>
+      <span class="vn-nav-badge">4</span>
+    </a>
+    <a href="assets.html" class="vn-nav-link active">
+      <i data-lucide="building-2"></i>
+      <span>Critical Infrastructure</span>
+    </a>
+    <a href="analytics.html" class="vn-nav-link">
+      <i data-lucide="bar-chart-3"></i>
+      <span>Analytics &amp; Verification</span>
+    </a>
+  </div>
+
+  <div class="vn-sidebar-sources">
+    <div class="vn-nav-section-title" style="padding:0 0 6px;">Live Feeds</div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>NASA IMERG Satellite</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>IMD Doppler Radar</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>ECMWF NWP (0.1°)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>Ground Gauge Mesh (14/16)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot warn"></span>
+      <span>CWC River Gauge</span>
+      <span class="vn-source-tag" style="color:var(--warning);">DELAY</span>
+    </div>
+  </div>
+
+  <div class="vn-sidebar-footer">
+    Model Run: <strong>15:00 IST (EPS)</strong><br />
+    Lead Time: <strong>+72h Horizon</strong>
+  </div>
+</nav>
+
+<!-- ═══════════════ MAIN VIEWPORT ═══════════════ -->
+<main class="vn-main">
+  <div class="vn-content">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <div class="page-title">Critical Infrastructure</div>
+      <div class="page-sub">10 assets tracked • 7 at risk • Indore District</div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn btn-secondary btn-sm">Export Risk Report</button>
+      <button class="btn btn-danger btn-sm">Alert All At-Risk</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY KPI -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+    <div class="kpi-card"><div class="kpi-label">Total Assets</div><div class="kpi-value" style="color:var(--text)">10</div><div class="kpi-sub">All tracked</div></div>
+    <div class="kpi-card"><div class="kpi-label">At Risk</div><div class="kpi-value error">7</div><div class="kpi-sub">High + Severe</div></div>
+    <div class="kpi-card"><div class="kpi-label">Flooded</div><div class="kpi-value severe">1</div><div class="kpi-sub">Ring Road</div></div>
+    <div class="kpi-card"><div class="kpi-label">Hospitals</div><div class="kpi-value error">2</div><div class="kpi-sub">At risk</div></div>
+    <div class="kpi-card"><div class="kpi-label">Bridges</div><div class="kpi-value severe">2</div><div class="kpi-sub">Critical</div></div>
+  </div>
+
+  <!-- TYPE FILTER & SEARCH -->
+  <div class="risk-filter" style="align-items:center;justify-content:space-between;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      <button class="filter-btn active" data-type="all">All Types</button>
+      <button class="filter-btn" data-type="Hospital">Hospitals</button>
+      <button class="filter-btn" data-type="School">Schools</button>
+      <button class="filter-btn" data-type="Bridge">Bridges</button>
+      <button class="filter-btn" data-type="Substation">Substations</button>
+      <button class="filter-btn" data-type="Road">Roads</button>
+      <button class="filter-btn" data-type="severe-only" style="background:var(--error);color:#fff;border-color:var(--error)">At-Risk Only</button>
+    </div>
+    <div style="position:relative;display:flex;align-items:center;">
+      <input type="text" id="asset-search" placeholder="Search asset or ward..." style="padding:6px 10px 6px 28px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;width:200px;outline:none;" />
+      <i data-lucide="search" style="position:absolute;left:8px;width:13px;height:13px;color:var(--muted);pointer-events:none;"></i>
+    </div>
+  </div>
+
+  <div class="assets-layout">
+    <!-- MAP -->
+    <div class="map-panel">
+      <div id="assets-map"></div>
+      <div class="map-legend">
+        <div style="font-weight:600;margin-bottom:6px;font-size:12px">Risk Level</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7A1F1F"></div> Severe / Flooded</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#B33A3A"></div> High</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#C98616"></div> Moderate</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#247A52"></div> Normal</div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: ASSET LIST + DETAIL -->
+    <div class="right-panel">
+      <div class="card" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div class="card-header"><span class="card-title">Asset Risk List</span><span class="text-sm text-muted">10 assets</span></div>
+        <div id="asset-list" style="overflow-y:auto;flex:1"></div>
+      </div>
+
+      <div class="asset-detail-card" id="asset-detail">
+        <div class="detail-title">MY Hospital</div>
+        <div class="detail-sub">🏥 Hospital &nbsp;|&nbsp; Ward 23, Vijay Nagar</div>
+        <div class="info-row"><span class="info-label">Risk Level</span><span class="badge high">HIGH</span></div>
+        <div class="info-row"><span class="info-label">Status</span><span class="badge active">AT RISK</span></div>
+        <div class="info-row"><span class="info-label">Distance to Flood Zone</span><span>0.4 km</span></div>
+        <div class="info-row"><span class="info-label">Expected Inundation</span><span>0.15–0.30 m</span></div>
+        <div class="info-row"><span class="info-label">Peak Risk Window</span><span>18:00–21:00 IST</span></div>
+        <div class="info-row"><span class="info-label">Patients / Capacity</span><span>487 / 650</span></div>
+        <div class="info-row"><span class="info-label">Emergency Contact</span><span>0731-2493490</span></div>
+        <div class="info-row"><span class="info-label">Evacuation Route</span><span>Via NH52 → Palasia</span></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-danger btn-sm">Send Alert</button>
+          <button class="btn btn-secondary btn-sm">View on Map</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /vn-content -->
+
+  <!-- UNIVERSAL FOOTER -->
+  <footer class="vn-footer">
+    <span><strong>HydroShield v1.0</strong> · Smart India Hackathon Early Warning Prototype</span>
+    <span>Telemetry: IMD Doppler Radar · NASA IMERG · ECMWF EPS · CWC River Gauges</span>
+    <span>District Emergency Operations Center, Indore</span>
+  </footer>
+</main>
+
+<script>
+const ASSETS = [
+  { id:'R1',  name:'Vijay Nagar Ring Road',        type:'Road',       icon:'🛣️', risk:'SEVERE',   status:'FLOODED',   lat:22.7480, lon:75.8870, ward:23, depth:'0.40–0.80m', dist:'On zone', peak:'17:00–21:00' },
+  { id:'B1',  name:'Khan River Bridge – NH52',     type:'Bridge',     icon:'🌉', risk:'SEVERE',   status:'AT RISK',   lat:22.7125, lon:75.8701, ward:15, depth:'0.30–0.60m', dist:'0.1 km', peak:'18:00–22:00' },
+  { id:'H1',  name:'MY Hospital',                  type:'Hospital',   icon:'🏥', risk:'HIGH',     status:'AT RISK',   lat:22.7255, lon:75.8889, ward:23, depth:'0.15–0.30m', dist:'0.4 km', peak:'18:00–21:00' },
+  { id:'S1',  name:"Devi Ahilya Univ. School",     type:'School',     icon:'🏫', risk:'HIGH',     status:'AT RISK',   lat:22.7544, lon:75.9021, ward:23, depth:'0.10–0.25m', dist:'0.2 km', peak:'18:00–20:00' },
+  { id:'E1',  name:'Vijay Nagar Substation 1',     type:'Substation', icon:'⚡', risk:'HIGH',     status:'AT RISK',   lat:22.7510, lon:75.8950, ward:23, depth:'0.20–0.40m', dist:'0.1 km', peak:'17:30–21:00' },
+  { id:'B2',  name:'Nanda Nagar Overpass',         type:'Bridge',     icon:'🌉', risk:'HIGH',     status:'MONITOR',   lat:22.7350, lon:75.8812, ward:31, depth:'0.10–0.20m', dist:'0.5 km', peak:'19:00–22:00' },
+  { id:'H2',  name:'Bombay Hospital',              type:'Hospital',   icon:'🏥', risk:'MODERATE', status:'MONITOR',   lat:22.7196, lon:75.8650, ward:8,  depth:'0.05–0.15m', dist:'0.8 km', peak:'20:00–23:00' },
+  { id:'SH1', name:'Emergency Shelter – Rajwada',  type:'Shelter',    icon:'⛺', risk:'MODERATE', status:'OPEN',      lat:22.7196, lon:75.8577, ward:8,  depth:'0.00m',      dist:'1.2 km', peak:'—' },
+  { id:'R2',  name:'MR-10 Expressway Segment',     type:'Road',       icon:'🛣️', risk:'HIGH',     status:'AT RISK',   lat:22.7000, lon:75.8800, ward:15, depth:'0.20–0.40m', dist:'0.3 km', peak:'18:00–20:00' },
+  { id:'W1',  name:'Bijalpur Water Treatment',     type:'Water Plant',icon:'🚰', risk:'LOW',      status:'NORMAL',    lat:22.6890, lon:75.8601, ward:41, depth:'0.00m',      dist:'2.1 km', peak:'—' },
+];
+
+const riskColor = { SEVERE:'#7A1F1F', HIGH:'#B33A3A', MODERATE:'#C98616', LOW:'#247A52' };
+const iconClass = { Hospital:'hospital', School:'school', Bridge:'bridge', Substation:'substation', Shelter:'shelter', 'Water Plant':'water', Road:'road' };
+
+// MAP
+const map = L.map('assets-map').setView([22.7196, 75.8577], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(map);
+
+// Flood zone overlay (semi-transparent)
+L.circle([22.7524, 75.8929], { radius:900, color:'#B33A3A', fillColor:'#B33A3A', fillOpacity:0.12, weight:1, dashArray:'4,4' }).addTo(map);
+
+const markers = {};
+ASSETS.forEach(a => {
+  const color = riskColor[a.risk] || '#667482';
+  const m = L.circleMarker([a.lat, a.lon], { radius:10, fillColor:color, color:'#fff', weight:2, fillOpacity:0.9 })
+    .addTo(map)
+    .bindPopup(`<b>${a.icon} ${a.name}</b><br>Risk: <b>${a.risk}</b><br>Status: ${a.status}<br>Ward ${a.ward}`);
+  m.on('click', () => showDetail(a));
+  markers[a.id] = m;
+});
+
+let currentTypeFilter = 'severe-only';
+let currentSearchTerm = '';
+
+// ASSET LIST
+const list = document.getElementById('asset-list');
+function renderList() {
+  list.innerHTML = '';
+  const filtered = ASSETS.filter(a => {
+    // Type / Severity filter
+    if (currentTypeFilter === 'severe-only') {
+      if (a.risk !== 'SEVERE' && a.risk !== 'HIGH') return false;
+    } else if (currentTypeFilter !== 'all') {
+      if (a.type !== currentTypeFilter) return false;
+    }
+    // Search query filter
+    if (currentSearchTerm) {
+      const match = a.name.toLowerCase().includes(currentSearchTerm) ||
+                    a.type.toLowerCase().includes(currentSearchTerm) ||
+                    String(a.ward).includes(currentSearchTerm);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="padding:24px 16px;text-align:center;color:var(--muted);font-size:12px;">No matching infrastructure assets found.</div>`;
+    return;
+  }
+
+  filtered.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'asset-list-item';
+    const badgeCls = a.risk.toLowerCase();
+    div.innerHTML = `
+      <div class="asset-icon ${(iconClass[a.type]||'road')}"><i data-lucide="building" style="width:16px;height:16px;color:var(--secondary)"></i></div>
+      <div class="asset-info">
+        <div class="asset-name">${a.name}</div>
+        <div class="asset-sub">${a.type} &nbsp;|&nbsp; Ward ${a.ward} &nbsp;·&nbsp; ${a.dist}</div>
+      </div>
+      <span class="badge ${badgeCls}">${a.risk}</span>
+    `;
+    div.onclick = () => { showDetail(a); map.setView([a.lat, a.lon], 15); markers[a.id].openPopup(); };
+    list.appendChild(div);
+  });
+  lucide.createIcons();
+}
+renderList();
+
+// Search input listener
+const searchInput = document.getElementById('asset-search');
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    currentSearchTerm = e.target.value.trim().toLowerCase();
+    renderList();
+  });
+}
+
+function showDetail(a) {
+  const d = document.getElementById('asset-detail');
+  const statusCls = a.status === 'FLOODED' ? 'severe' : a.status === 'AT RISK' ? 'active' : a.status === 'MONITOR' ? 'monitoring' : 'resolved';
+  d.innerHTML = `
+    <div class="detail-title">${a.name}</div>
+    <div class="detail-sub">${a.type} &nbsp;|&nbsp; Ward ${a.ward}</div>
+    <div class="info-row"><span class="info-label">Risk Level</span><span class="badge ${a.risk.toLowerCase()}">${a.risk}</span></div>
+    <div class="info-row"><span class="info-label">Status</span><span class="badge ${statusCls}">${a.status}</span></div>
+    <div class="info-row"><span class="info-label">Expected Depth</span><span>${a.depth}</span></div>
+    <div class="info-row"><span class="info-label">Distance to Zone</span><span>${a.dist}</span></div>
+    <div class="info-row"><span class="info-label">Peak Risk Window</span><span>${a.peak}</span></div>
+    <div class="info-row"><span class="info-label">Ward</span><span>Ward ${a.ward}</span></div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-danger btn-sm" id="btn-send-alert">Send Alert</button>
+      <button class="btn btn-secondary btn-sm" id="btn-view-map">View on Map</button>
+    </div>
+  `;
+  document.getElementById('btn-view-map').onclick = () => {
+    map.setView([a.lat, a.lon], 16);
+    markers[a.id].openPopup();
+  };
+  document.getElementById('btn-send-alert').onclick = () => {
+    window.location.href = `alerts.html?area=${encodeURIComponent(a.name)}`;
+  };
+}
+
+// Top button handlers
+document.querySelector('.flex.gap-2 button.btn-secondary').onclick = () => {
+  const exportText = `========================================================================
+CRITICAL INFRASTRUCTURE SURVEILLANCE & RISK AUDIT — INDORE DISTRICT
+Generated: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+Surveillance Radius: 15km | Total Assets Tracked: ${ASSETS.length}
+========================================================================
+` + ASSETS.map(a => `[${a.risk}] ${a.name} (${a.type}, Ward ${a.ward})
+   - Status       : ${a.status}
+   - Distance     : ${a.dist}
+   - Inundation   : ${a.depth}
+   - Peak Window  : ${a.peak}
+`).join('\n') + `
+========================================================================
+Authority: District Disaster Management Authority (DDMA), Indore
+========================================================================`;
+  const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `HydroShield_Infrastructure_Audit_${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+document.querySelector('.flex.gap-2 button.btn-danger').onclick = () => {
+  window.location.href = 'alerts.html';
+};
+
+// Filters
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTypeFilter = btn.dataset.type;
+    renderList();
+  });
+});
+
+lucide.createIcons();
+setTimeout(() => {
+  map.invalidateSize();
+}, 200);
+</script>
+</body>
+</html>

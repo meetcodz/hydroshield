@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HydroShield – Alerts & Notifications</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F4F6F8;
+      --surface: #FFFFFF;
+      --primary: #123B5D;
+      --secondary: #2F6F95;
+      --text: #17212B;
+      --muted: #667482;
+      --border: #D7DEE5;
+      --success: #247A52;
+      --warning: #C98616;
+      --error: #B33A3A;
+      --severe: #7A1F1F;
+      --info: #286D91;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 10px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 64px;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 200;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .header-logo-icon {
+      width: 36px; height: 36px;
+      background: #2F6F95;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .header-logo-text { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.5px; }
+    .header-logo-sub { font-size: 10px; color: rgba(255,255,255,0.55); letter-spacing: 1px; text-transform: uppercase; }
+    .header-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.15); margin: 0 8px; }
+    .header-context { color: rgba(255,255,255,0.7); font-size: 12px; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+    .header-badge {
+      background: var(--error);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .header-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: #fff;
+      border-radius: 50%;
+      animation: blink 1.2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .header-time { color: rgba(255,255,255,0.6); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .header-user {
+      width: 32px; height: 32px;
+      background: var(--secondary);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 12px; font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: fixed;
+      top: 64px; left: 0; bottom: 0;
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      z-index: 100;
+      padding: 16px 0;
+    }
+    .sidebar-section { margin-bottom: 4px; }
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      padding: 8px 20px 4px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-link:hover { background: var(--bg); color: var(--text); }
+    .nav-link.active {
+      background: #EBF2F8;
+      color: var(--primary);
+      border-left-color: var(--primary);
+      font-weight: 600;
+    }
+    .nav-link lucide-icon, .nav-link i[data-lucide] { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--error);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .sidebar-divider { height: 1px; background: var(--border); margin: 12px 16px; }
+    .sidebar-footer { padding: 12px 20px; }
+    .sidebar-footer-label { font-size: 11px; color: var(--muted); }
+    .sidebar-footer-value { font-size: 12px; font-weight: 600; color: var(--success); }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      margin-left: 240px;
+      padding-top: 64px;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+    .content { padding: 24px 28px; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .page-title-area { }
+    .page-title { font-size: 20px; font-weight: 700; color: var(--text); }
+    .page-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { box-shadow: 0 2px 8px rgba(18,59,93,0.35); }
+    .btn-outline {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-weight: 500;
+    }
+    .btn-danger { background: var(--error); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 4px; }
+    .btn[data-lucide] { width: 14px; height: 14px; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-tabs { display: flex; gap: 4px; }
+    .filter-tab {
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .filter-tab:hover { background: var(--bg); color: var(--text); }
+    .filter-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .filter-tab.severe-tab.active { background: var(--severe); border-color: var(--severe); }
+    .filter-tab.high-tab.active { background: var(--error); border-color: var(--error); }
+    .filter-tab.moderate-tab.active { background: var(--warning); border-color: var(--warning); }
+    .filter-tab.low-tab.active { background: #888; border-color: #888; }
+    .filter-search {
+      margin-left: auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .filter-search input {
+      padding: 7px 12px 7px 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--text);
+      width: 220px;
+      outline: none;
+    }
+    .filter-search input:focus { border-color: var(--secondary); }
+    .filter-search-icon {
+      position: absolute;
+      left: 9px;
+      color: var(--muted);
+      width: 14px; height: 14px;
+      pointer-events: none;
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-icon svg { width: 20px; height: 20px; }
+    .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1.1; }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── TABLE ── */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-header-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .table-header-sub { font-size: 11px; color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      background: #F8FAFB;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #F0F5FA; }
+    tbody tr.new-row { animation: slideIn 0.4s ease; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    tbody td {
+      padding: 11px 16px;
+      font-size: 12.5px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .time-cell { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; white-space: nowrap; }
+    .area-cell { font-weight: 500; }
+    .area-sub { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      color: #fff;
+    }
+    .badge-severe { background: var(--severe); }
+    .badge-high { background: var(--error); }
+    .badge-moderate { background: var(--warning); }
+    .badge-low { background: #888; }
+    .badge-resolved { background: #8A9BB0; }
+    .badge-active { background: var(--error); }
+    .badge-monitoring { background: var(--warning); }
+    .badge-new { background: var(--secondary); }
+
+    .prob-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .prob-bar-track {
+      width: 56px; height: 5px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .prob-bar-fill { height: 100%; border-radius: 3px; }
+
+    .action-btns { display: flex; gap: 5px; flex-wrap: nowrap; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      width: 480px;
+      max-width: 96vw;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn {
+      from { opacity:0; transform:translateY(-16px) scale(0.97); }
+      to { opacity:1; transform:translateY(0) scale(1); }
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); padding: 4px; border-radius: 4px;
+      display: flex; align-items: center;
+      transition: background 0.12s;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text); }
+    .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-control {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-control:focus { border-color: var(--secondary); }
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; min-height: 72px; }
+    .checkbox-group { display: flex; gap: 16px; flex-wrap: wrap; }
+    .checkbox-item { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 500; }
+    .checkbox-item input { accent-color: var(--primary); width: 14px; height: 14px; cursor: pointer; }
+    .modal-footer {
+      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+      padding: 14px 22px 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── DETAIL PANEL ── */
+    .detail-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 400;
+      pointer-events: none;
+    }
+    .detail-overlay.open { pointer-events: auto; }
+    .detail-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.2);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .detail-overlay.open .detail-backdrop { opacity: 1; }
+    .detail-panel {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 420px;
+      max-width: 95vw;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+    }
+    .detail-overlay.open .detail-panel { transform: translateX(0); }
+    .detail-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: var(--surface);
+      z-index: 2;
+    }
+    .detail-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .detail-id { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: monospace; }
+    .detail-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); padding: 4px; border-radius: 4px;
+      display: flex; align-items: center;
+      flex-shrink: 0;
+      transition: background 0.12s;
+    }
+    .detail-close:hover { background: var(--bg); color: var(--text); }
+    .detail-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 18px; }
+    .detail-section { }
+    .detail-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .detail-key { font-size: 12px; color: var(--muted); font-weight: 500; flex-shrink: 0; min-width: 120px; }
+    .detail-val { font-size: 12px; color: var(--text); font-weight: 600; text-align: right; }
+    .risk-factors { display: flex; flex-direction: column; gap: 6px; }
+    .risk-factor-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px;
+      background: #F8FAFB;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .risk-factor-item svg { color: var(--warning); flex-shrink: 0; }
+    .actions-list { display: flex; flex-direction: column; gap: 6px; }
+    .action-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 8px 10px;
+      background: #EBF2F8;
+      border-radius: var(--radius-sm);
+      border: 1px solid #C6D9EC;
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 500;
+    }
+    .action-item svg { flex-shrink: 0; margin-top: 1px; }
+    .gauge-row { display: flex; gap: 16px; }
+    .gauge-box {
+      flex: 1;
+      background: #F8FAFB;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      text-align: center;
+    }
+    .gauge-val { font-size: 24px; font-weight: 700; color: var(--primary); }
+    .gauge-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .alert-type-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #FEF3F3; border: 1px solid #F5C6C6;
+      border-radius: 4px; padding: 4px 10px;
+      font-size: 12px; font-weight: 600; color: var(--error);
+    }
+    .detail-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 8px; justify-content: flex-end;
+      position: sticky; bottom: 0;
+      background: var(--surface);
+    }
+
+    /* ── TOAST ── */
+    .toast-container {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      z-index: 999;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .toast {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--success);
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      animation: toastIn 0.25s ease;
+      max-width: 320px;
+    }
+    .toast.error { border-left-color: var(--error); }
+    @keyframes toastIn {
+      from { opacity:0; transform:translateX(24px); }
+      to { opacity:1; transform:translateX(0); }
+    }
+    @keyframes toastOut {
+      from { opacity:1; transform:translateX(0); }
+      to { opacity:0; transform:translateX(24px); }
+    }
+    .toast-icon { color: var(--success); flex-shrink: 0; }
+  </style>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<!-- ═══════════════ UNIVERSAL HEADER ═══════════════ -->
+<header class="vn-header">
+  <a class="vn-logo" href="index.html">
+    <div class="vn-logo-icon">
+      <i data-lucide="cloud-rain" style="width:20px;height:20px;"></i>
+    </div>
+    <div>
+      <div class="vn-logo-text">HYDRO<span>SHIELD</span></div>
+      <div class="vn-logo-sub">Early Warning &amp; Inundation Platform</div>
+    </div>
+  </a>
+
+  <div class="vn-header-center">
+    <span>District:</span>
+    <span class="highlight">Indore, Madhya Pradesh</span>
+    <span class="sep">|</span>
+    <span>Monsoon Ops 2024</span>
+    <span class="sep">|</span>
+    <span>Updated: <span class="highlight" id="headerTime">15:36:00 IST</span></span>
+  </div>
+
+  <div class="vn-header-right">
+    <div class="vn-header-icon-btn" title="4 Active Alerts" onclick="window.location.href='alerts.html'">
+      <i data-lucide="bell" style="width:16px;height:16px;"></i>
+      <div class="badge-dot"></div>
+    </div>
+    <div class="vn-header-user">
+      <div class="vn-avatar">RS</div>
+      <span>Rajesh Sharma</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ UNIVERSAL SIDEBAR ═══════════════ -->
+<nav class="vn-sidebar">
+  <div class="vn-sidebar-nav">
+    <div class="vn-nav-section-title">Navigation</div>
+    <a href="index.html" class="vn-nav-link">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Operations Dashboard</span>
+    </a>
+    <a href="rainfall.html" class="vn-nav-link">
+      <i data-lucide="cloud-rain"></i>
+      <span>Rainfall Intelligence</span>
+    </a>
+    <a href="inundation.html" class="vn-nav-link">
+      <i data-lucide="waves"></i>
+      <span>Inundation Map</span>
+    </a>
+    <a href="alerts.html" class="vn-nav-link active">
+      <i data-lucide="bell-ring"></i>
+      <span>Alerts &amp; Triage</span>
+      <span class="vn-nav-badge">4</span>
+    </a>
+    <a href="assets.html" class="vn-nav-link">
+      <i data-lucide="building-2"></i>
+      <span>Critical Infrastructure</span>
+    </a>
+    <a href="analytics.html" class="vn-nav-link">
+      <i data-lucide="bar-chart-3"></i>
+      <span>Analytics &amp; Verification</span>
+    </a>
+  </div>
+
+  <div class="vn-sidebar-sources">
+    <div class="vn-nav-section-title" style="padding:0 0 6px;">Live Feeds</div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>NASA IMERG Satellite</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>IMD Doppler Radar</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>ECMWF NWP (0.1°)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot live"></span>
+      <span>Ground Gauge Mesh (14/16)</span>
+      <span class="vn-source-tag">ONLINE</span>
+    </div>
+    <div class="vn-source-item">
+      <span class="vn-source-dot warn"></span>
+      <span>CWC River Gauge</span>
+      <span class="vn-source-tag" style="color:var(--warning);">DELAY</span>
+    </div>
+  </div>
+
+  <div class="vn-sidebar-footer">
+    Model Run: <strong>15:00 IST (EPS)</strong><br />
+    Lead Time: <strong>+72h Horizon</strong>
+  </div>
+</nav>
+
+<!-- ═══════════════ MAIN VIEWPORT ═══════════════ -->
+<main class="vn-main">
+  <div class="vn-content">
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-title-area">
+          <div class="page-title">Alerts &amp; Notifications</div>
+          <div class="page-subtitle">Real-time flood and rainfall alert management · Indore Division</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">
+          <i data-lucide="plus" style="width:14px;height:14px;"></i> Issue New Alert
+        </button>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all" onclick="setFilter(this,'all')">All</button>
+          <button class="filter-tab severe-tab" data-filter="SEVERE" onclick="setFilter(this,'SEVERE')">SEVERE</button>
+          <button class="filter-tab high-tab" data-filter="HIGH" onclick="setFilter(this,'HIGH')">HIGH</button>
+          <button class="filter-tab moderate-tab" data-filter="MODERATE" onclick="setFilter(this,'MODERATE')">MODERATE</button>
+          <button class="filter-tab low-tab" data-filter="LOW" onclick="setFilter(this,'LOW')">LOW</button>
+        </div>
+        <div class="filter-search">
+          <i data-lucide="search" class="filter-search-icon"></i>
+          <input type="text" placeholder="Search area or alert type…" id="searchInput" oninput="applySearch()" />
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EBF2F8;">
+            <i data-lucide="bell-ring" style="color:var(--primary);"></i>
+          </div>
+          <div>
+            <div class="stat-label">Active Alerts</div>
+            <div class="stat-value" style="color:var(--primary);">4</div>
+            <div class="stat-sub">Across 4 wards</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#F9ECEC;">
+            <i data-lucide="alert-octagon" style="color:var(--severe);"></i>
+          </div>
+          <div>
+            <div class="stat-label">SEVERE</div>
+            <div class="stat-value" style="color:var(--severe);">1</div>
+            <div class="stat-sub">Immediate action</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FEEDED;">
+            <i data-lucide="alert-triangle" style="color:var(--error);"></i>
+          </div>
+          <div>
+            <div class="stat-label">HIGH</div>
+            <div class="stat-value" style="color:var(--error);">2</div>
+            <div class="stat-sub">Monitoring closely</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#E8F4ED;">
+            <i data-lucide="check-circle-2" style="color:var(--success);"></i>
+          </div>
+          <div>
+            <div class="stat-label">Resolved (24h)</div>
+            <div class="stat-value" style="color:var(--success);">7</div>
+            <div class="stat-sub">Since 00:00 IST</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <div class="table-header-title">Alert Log</div>
+            <div class="table-header-sub">Sorted by time · Click any row for details</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-outline btn-sm" style="gap:5px;" onclick="exportCSV()">
+              <i data-lucide="download" style="width:12px;height:12px;"></i> Export CSV
+            </button>
+            <button class="btn btn-outline btn-sm" style="gap:5px;" onclick="refreshTable()">
+              <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Refresh
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Area</th>
+                <th>Alert Type</th>
+                <th>Severity</th>
+                <th>Probability</th>
+                <th>Confidence</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="alertsTableBody">
+              <!-- Rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /vn-content -->
+
+    <!-- UNIVERSAL FOOTER -->
+    <footer class="vn-footer">
+      <span><strong>HydroShield v1.0</strong> · Smart India Hackathon Early Warning Prototype</span>
+      <span>Telemetry: IMD Doppler Radar · NASA IMERG · ECMWF EPS · CWC River Gauges</span>
+      <span>District Emergency Operations Center, Indore</span>
+    </footer>
+  </main>
+
+  <!-- ══════════════ MODAL ══════════════ -->
+  <div class="modal-overlay" id="modalOverlay" onclick="handleModalOverlayClick(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modalTitle">Issue Alert</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">Create and broadcast a new alert to field teams and residents</div>
+        </div>
+        <button class="modal-close" onclick="closeModal()"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Area / Ward</label>
+            <select class="form-control" id="m-area">
+              <option value="">Select ward…</option>
+              <option>Ward 23 – Vijay Nagar</option>
+              <option>Ward 8 – Rajwada</option>
+              <option>Ward 15 – Bhawarkuan</option>
+              <option>Ward 31 – Palasia</option>
+              <option>Ward 5 – Sapna Sangita</option>
+              <option>Ward 12 – Malharganj</option>
+              <option>Ward 19 – Scheme 54</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alert Type</label>
+            <select class="form-control" id="m-type">
+              <option value="">Select type…</option>
+              <option>Flood Warning</option>
+              <option>Flash Flood Risk</option>
+              <option>Heavy Rainfall</option>
+              <option>Road Inundation</option>
+              <option>Landslide Risk</option>
+              <option>River Overflow</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Severity</label>
+            <select class="form-control" id="m-severity">
+              <option value="">Select severity…</option>
+              <option>SEVERE</option>
+              <option>HIGH</option>
+              <option>MODERATE</option>
+              <option>LOW</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Probability (%)</label>
+            <input type="number" class="form-control" id="m-prob" min="0" max="100" placeholder="e.g. 75" />
+          </div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Alert Message</label>
+          <textarea class="form-control" id="m-message" placeholder="Describe the alert details, recommended actions…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notify via</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" checked /> <i data-lucide="smartphone" style="width:13px;height:13px;color:var(--secondary);"></i> SMS</label>
+            <label class="checkbox-item"><input type="checkbox" checked /> <i data-lucide="message-circle" style="width:13px;height:13px;color:var(--success);"></i> WhatsApp</label>
+            <label class="checkbox-item"><input type="checkbox" checked /> <i data-lucide="monitor" style="width:13px;height:13px;color:var(--primary);"></i> Dashboard</label>
+            <label class="checkbox-item"><input type="checkbox" /> <i data-lucide="volume-2" style="width:13px;height:13px;color:var(--warning);"></i> Siren</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="issueAlert()">
+          <i data-lucide="send" style="width:13px;height:13px;"></i> Issue Alert
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ DETAIL PANEL ══════════════ -->
+  <div class="detail-overlay" id="detailOverlay">
+    <div class="detail-backdrop" onclick="closeDetail()"></div>
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-header">
+        <div>
+          <div class="detail-title" id="dp-title">Flood Warning · Ward 23</div>
+          <div class="detail-id" id="dp-id">ALT-2024-0892</div>
+        </div>
+        <button class="detail-close" onclick="closeDetail()"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
+      </div>
+      <div class="detail-body">
+
+        <!-- Meta -->
+        <div class="detail-section">
+          <div class="detail-section-title">Alert Information</div>
+          <div class="detail-row">
+            <span class="detail-key">Alert ID</span>
+            <span class="detail-val" id="dp-alert-id" style="font-family:monospace;">ALT-2024-0892</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-key">Issued At</span>
+            <span class="detail-val" id="dp-issued">15:12 IST by Operator Sharma</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-key">Area</span>
+            <span class="detail-val" id="dp-area">Ward 23, Vijay Nagar, Indore</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-key">Alert Type</span>
+            <span class="detail-val"><span class="alert-type-chip" id="dp-type"><i data-lucide="alert-octagon" style="width:12px;height:12px;"></i> Flood Warning</span></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-key">Severity</span>
+            <span class="detail-val" id="dp-severity-badge"><span class="badge badge-severe">SEVERE</span></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-key">Status</span>
+            <span class="detail-val"><span class="badge badge-active" id="dp-status-badge">ACTIVE</span></span>
+          </div>
+        </div>
+
+        <!-- Gauges -->
+        <div class="detail-section">
+          <div class="detail-section-title">Prediction Metrics</div>
+          <div class="gauge-row">
+            <div class="gauge-box">
+              <div class="gauge-val" id="dp-prob">82%</div>
+              <div class="gauge-label">Flood Probability</div>
+            </div>
+            <div class="gauge-box">
+              <div class="gauge-val" id="dp-conf">87%</div>
+              <div class="gauge-label">Model Confidence</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Factors -->
+        <div class="detail-section">
+          <div class="detail-section-title">Risk Factors</div>
+          <div class="risk-factors" id="dp-risk-factors">
+            <div class="risk-factor-item">
+              <i data-lucide="cloud-rain" style="width:14px;height:14px;color:var(--info);"></i>
+              127mm forecast rainfall (next 6h)
+            </div>
+            <div class="risk-factor-item">
+              <i data-lucide="mountain" style="width:14px;height:14px;color:var(--muted);"></i>
+              Low elevation: 552m ASL
+            </div>
+            <div class="risk-factor-item">
+              <i data-lucide="droplets" style="width:14px;height:14px;color:var(--secondary);"></i>
+              78% soil saturation
+            </div>
+            <div class="risk-factor-item">
+              <i data-lucide="waves" style="width:14px;height:14px;color:var(--error);"></i>
+              Drainage proximity: 0.3km
+            </div>
+          </div>
+        </div>
+
+        <!-- Forecast -->
+        <div class="detail-section">
+          <div class="detail-section-title">Flood Forecast</div>
+          <div class="detail-row">
+            <span class="detail-key">Expected Depth</span>
+            <span class="detail-val" id="dp-depth">0.45 – 0.80 m</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-key">Peak Risk Window</span>
+            <span class="detail-val" id="dp-peak">18:00 – 21:00 IST</span>
+          </div>
+        </div>
+
+        <!-- Impact -->
+        <div class="detail-section">
+          <div class="detail-section-title">Impact Assessment</div>
+          <div class="detail-row">
+            <span class="detail-key">Affected Residents</span>
+            <span class="detail-val" id="dp-residents">3,200</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-key">Nearby Critical</span>
+            <span class="detail-val" id="dp-critical" style="text-align:right;font-size:11.5px;">MY Hospital (0.4km)<br/>Vijay Nagar School (0.2km)</span>
+          </div>
+        </div>
+
+        <!-- Recommended Actions -->
+        <div class="detail-section">
+          <div class="detail-section-title">Recommended Actions</div>
+          <div class="actions-list" id="dp-actions">
+            <div class="action-item">
+              <i data-lucide="users" style="width:13px;height:13px;"></i>
+              Pre-position rescue teams at Ward 23 entry points
+            </div>
+            <div class="action-item">
+              <i data-lucide="phone-call" style="width:13px;height:13px;"></i>
+              Notify MY Hospital emergency department
+            </div>
+            <div class="action-item">
+              <i data-lucide="activity" style="width:13px;height:13px;"></i>
+              Monitor Khan River water level continuously
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="detail-footer">
+        <button class="btn btn-outline btn-sm">
+          <i data-lucide="printer" style="width:12px;height:12px;"></i> Print Report
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="closeDetail()">
+          <i data-lucide="x-circle" style="width:12px;height:12px;"></i> Dismiss Alert
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="closeDetail()">
+          <i data-lucide="check-circle" style="width:12px;height:12px;"></i> Acknowledge
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // ── Clock ──────────────────────────────────────────────────────
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2,'0');
+      const m = String(now.getMinutes()).padStart(2,'0');
+      const s = String(now.getSeconds()).padStart(2,'0');
+      document.getElementById('headerTime').textContent = `${h}:${m}:${s} IST`;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ── Alert Data ─────────────────────────────────────────────────
+    const initialAlerts = [
+      {
+        time: '15:12', area: 'Ward 23 – Vijay Nagar', type: 'Flood Warning',
+        severity: 'SEVERE', prob: 82, conf: 87, status: 'ACTIVE',
+        actions: ['Escalate','Resolve'],
+        detail: {
+          id: 'ALT-2024-0892', issued: '15:12 IST by Operator Sharma',
+          area: 'Ward 23, Vijay Nagar, Indore', depth: '0.45 – 0.80 m',
+          peak: '18:00 – 21:00 IST', residents: '3,200',
+          critical: 'MY Hospital (0.4km)<br/>Vijay Nagar School (0.2km)',
+          riskFactors: [
+            {icon:'cloud-rain',color:'var(--info)',text:'127mm forecast rainfall (next 6h)'},
+            {icon:'mountain',color:'var(--muted)',text:'Low elevation: 552m ASL'},
+            {icon:'droplets',color:'var(--secondary)',text:'78% soil saturation'},
+            {icon:'waves',color:'var(--error)',text:'Drainage proximity: 0.3km'},
+          ],
+          recommendedActions: [
+            {icon:'users',text:'Pre-position rescue teams at Ward 23 entry points'},
+            {icon:'phone-call',text:'Notify MY Hospital emergency department'},
+            {icon:'activity',text:'Monitor Khan River water level continuously'},
+          ]
+        }
+      },
+      {
+        time: '14:58', area: 'Ward 8 – Rajwada', type: 'Heavy Rainfall',
+        severity: 'HIGH', prob: 71, conf: 79, status: 'ACTIVE',
+        actions: ['Escalate','Resolve'],
+        detail: {
+          id: 'ALT-2024-0891', issued: '14:58 IST by System Auto', 
+          area: 'Ward 8, Rajwada, Indore', depth: '0.20 – 0.45 m',
+          peak: '17:00 – 20:00 IST', residents: '5,400',
+          critical: 'Rajwada Police Station (0.5km)',
+          riskFactors: [
+            {icon:'cloud-rain',color:'var(--info)',text:'98mm forecast rainfall (next 6h)'},
+            {icon:'droplets',color:'var(--secondary)',text:'65% soil saturation'},
+          ],
+          recommendedActions: [
+            {icon:'users',text:'Issue public advisory for Rajwada area'},
+            {icon:'activity',text:'Deploy pumping units at low-lying zones'},
+          ]
+        }
+      },
+      {
+        time: '14:32', area: 'Ward 15 – Bhawarkuan', type: 'Flash Flood Risk',
+        severity: 'HIGH', prob: 67, conf: 74, status: 'MONITORING',
+        actions: ['Activate','Dismiss'],
+        detail: {
+          id: 'ALT-2024-0890', issued: '14:32 IST by Operator Verma',
+          area: 'Ward 15, Bhawarkuan, Indore', depth: '0.15 – 0.35 m',
+          peak: '16:30 – 19:30 IST', residents: '2,800',
+          critical: 'Bhawarkuan Fire Station (0.8km)',
+          riskFactors: [
+            {icon:'cloud-rain',color:'var(--info)',text:'85mm forecast rainfall'},
+            {icon:'waves',color:'var(--error)',text:'Drainage proximity: 0.6km'},
+          ],
+          recommendedActions: [
+            {icon:'phone-call',text:'Alert Bhawarkuan residential societies'},
+            {icon:'activity',text:'Monitor drainage channels for blockage'},
+          ]
+        }
+      },
+      {
+        time: '13:55', area: 'Ward 31 – Palasia', type: 'Road Inundation',
+        severity: 'MODERATE', prob: 54, conf: 68, status: 'MONITORING',
+        actions: ['Activate','Dismiss'],
+        detail: {
+          id: 'ALT-2024-0889', issued: '13:55 IST by System Auto',
+          area: 'Ward 31, Palasia, Indore', depth: '0.10 – 0.25 m',
+          peak: '15:00 – 18:00 IST', residents: '1,200',
+          critical: 'Palasia Square Junction',
+          riskFactors: [
+            {icon:'cloud-rain',color:'var(--info)',text:'64mm forecast rainfall'},
+            {icon:'map-pin',color:'var(--muted)',text:'Low-lying road at Palasia junction'},
+          ],
+          recommendedActions: [
+            {icon:'alert-triangle',text:'Place road warning boards at Palasia Square'},
+            {icon:'users',text:'Traffic diversion if depth exceeds 0.20m'},
+          ]
+        }
+      },
+      {
+        time: '11:22', area: 'Ward 5 – Sapna Sangita', type: 'Heavy Rainfall',
+        severity: 'HIGH', prob: 78, conf: 82, status: 'RESOLVED',
+        actions: ['View'],
+        detail: {
+          id: 'ALT-2024-0888', issued: '11:22 IST by Operator Joshi',
+          area: 'Ward 5, Sapna Sangita, Indore', depth: '—',
+          peak: '—', residents: '2,100',
+          critical: 'Sapna Sangita School (0.3km)',
+          riskFactors: [
+            {icon:'cloud-rain',color:'var(--info)',text:'91mm observed rainfall'},
+          ],
+          recommendedActions: [
+            {icon:'check-circle',text:'Alert resolved – situation normalised'},
+          ]
+        }
+      },
+      {
+        time: '10:45', area: 'Ward 12 – Malharganj', type: 'Flood Risk',
+        severity: 'MODERATE', prob: 61, conf: 71, status: 'RESOLVED',
+        actions: ['View'],
+        detail: {
+          id: 'ALT-2024-0887', issued: '10:45 IST by System Auto',
+          area: 'Ward 12, Malharganj, Indore', depth: '—',
+          peak: '—', residents: '3,600',
+          critical: 'Malharganj Market',
+          riskFactors: [
+            {icon:'cloud-rain',color:'var(--info)',text:'72mm observed rainfall'},
+          ],
+          recommendedActions: [
+            {icon:'check-circle',text:'Alert resolved – water receded'},
+          ]
+        }
+      },
+      {
+        time: '09:30', area: 'Ward 19 – Scheme 54', type: 'Flash Flood',
+        severity: 'HIGH', prob: 69, conf: 76, status: 'RESOLVED',
+        actions: ['View'],
+        detail: {
+          id: 'ALT-2024-0886', issued: '09:30 IST by Operator Sharma',
+          area: 'Ward 19, Scheme 54, Indore', depth: '—',
+          peak: '—', residents: '4,100',
+          critical: 'Scheme 54 Underpass',
+          riskFactors: [
+            {icon:'cloud-rain',color:'var(--info)',text:'88mm observed rainfall'},
+            {icon:'waves',color:'var(--error)',text:'Underpass flooding risk'},
+          ],
+          recommendedActions: [
+            {icon:'check-circle',text:'Alert resolved – underpass cleared'},
+          ]
+        }
+      },
+    ];
+
+    let alerts = [...initialAlerts];
+    let currentFilter = 'all';
+    let newAlertCounter = 900;
+
+    // ── Severity → badge class ─────────────────────────────────────
+    function severityClass(s) {
+      switch(s) {
+        case 'SEVERE': return 'badge-severe';
+        case 'HIGH': return 'badge-high';
+        case 'MODERATE': return 'badge-moderate';
+        case 'LOW': return 'badge-low';
+        default: return 'badge-low';
+      }
+    }
+    function statusClass(s) {
+      switch(s) {
+        case 'ACTIVE': return 'badge-active';
+        case 'MONITORING': return 'badge-monitoring';
+        case 'RESOLVED': return 'badge-resolved';
+        default: return 'badge-new';
+      }
+    }
+    function probColor(p) {
+      if (p >= 75) return 'var(--severe)';
+      if (p >= 60) return 'var(--error)';
+      if (p >= 45) return 'var(--warning)';
+      return 'var(--success)';
+    }
+    function actionBtnClass(a) {
+      switch(a) {
+        case 'Escalate': return 'btn-danger';
+        case 'Resolve': return 'btn-success';
+        case 'Activate': return 'btn-primary';
+        case 'Dismiss': return 'btn-outline';
+        default: return 'btn-outline';
+      }
+    }
+
+    // ── Render Table ───────────────────────────────────────────────
+    function renderTable(data, highlightFirst) {
+      const tbody = document.getElementById('alertsTableBody');
+      tbody.innerHTML = '';
+      data.forEach((a, idx) => {
+        const tr = document.createElement('tr');
+        if (highlightFirst && idx === 0) tr.classList.add('new-row');
+        tr.onclick = (e) => {
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+          openDetail(a);
+        };
+        tr.innerHTML = `
+          <td class="time-cell">${a.time}</td>
+          <td class="area-cell">${a.area}</td>
+          <td>${a.type}</td>
+          <td><span class="badge ${severityClass(a.severity)}">${a.severity}</span></td>
+          <td>
+            <div class="prob-bar">
+              <span style="font-weight:600;color:${probColor(a.prob)};min-width:32px;">${a.prob}%</span>
+              <div class="prob-bar-track">
+                <div class="prob-bar-fill" style="width:${a.prob}%;background:${probColor(a.prob)};"></div>
+              </div>
+            </div>
+          </td>
+          <td style="color:var(--text);font-weight:500;">${a.conf}%</td>
+          <td><span class="badge ${statusClass(a.status)}">${a.status}</span></td>
+          <td>
+            <div class="action-btns">
+              ${a.actions.map(act => `<button class="btn btn-sm ${actionBtnClass(act)}" onclick="handleAction(event,'${act}',${alerts.indexOf(a)})">${act}</button>`).join('')}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    // ── Initial Render ─────────────────────────────────────────────
+    renderTable(alerts, false);
+
+    // ── Filter ─────────────────────────────────────────────────────
+    function setFilter(el, filter) {
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      currentFilter = filter;
+      applySearch();
+    }
+    function applySearch() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      let filtered = alerts;
+      if (currentFilter !== 'all') filtered = filtered.filter(a => a.severity === currentFilter);
+      if (q) filtered = filtered.filter(a => a.area.toLowerCase().includes(q) || a.type.toLowerCase().includes(q));
+      renderTable(filtered, false);
+    }
+
+    // ── Action Buttons ─────────────────────────────────────────────
+    function handleAction(e, action, idx) {
+      e.stopPropagation();
+      const a = alerts[idx];
+      if (action === 'Resolve') {
+        a.status = 'RESOLVED';
+        a.actions = ['View'];
+        showToast('Alert marked as resolved.', true);
+      } else if (action === 'Escalate') {
+        showToast('Alert escalated to District Control Room.', false);
+      } else if (action === 'Activate') {
+        a.status = 'ACTIVE';
+        a.actions = ['Escalate','Resolve'];
+        showToast('Alert activated and broadcast.', true);
+      } else if (action === 'Dismiss') {
+        a.status = 'RESOLVED';
+        a.actions = ['View'];
+        showToast('Alert dismissed.', true);
+      }
+      applySearch();
+    }
+
+    // ── Modal ──────────────────────────────────────────────────────
+    function openModal() {
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+    }
+    function handleModalOverlayClick(e) {
+      if (e.target === document.getElementById('modalOverlay')) closeModal();
+    }
+    function issueAlert() {
+      const area = document.getElementById('m-area').value;
+      const type = document.getElementById('m-type').value;
+      const severity = document.getElementById('m-severity').value;
+      const prob = parseInt(document.getElementById('m-prob').value) || 70;
+      if (!area || !type || !severity) {
+        showToast('Please fill in all required fields.', false, true);
+        return;
+      }
+      newAlertCounter++;
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2,'0');
+      const m = String(now.getMinutes()).padStart(2,'0');
+      const newAlert = {
+        time: `${h}:${m}`,
+        area: area,
+        type: type,
+        severity: severity,
+        prob: prob,
+        conf: Math.max(50, prob - 8),
+        status: 'ACTIVE',
+        actions: ['Escalate','Resolve'],
+        detail: {
+          id: `ALT-2024-0${newAlertCounter}`,
+          issued: `${h}:${m} IST by Operator Sharma`,
+          area: `${area}, Indore`,
+          depth: '—', peak: '—',
+          residents: '—', critical: '—',
+          riskFactors: [{icon:'cloud-rain',color:'var(--info)',text:'New alert issued manually'}],
+          recommendedActions: [{icon:'users',text:'Respond as per standard protocol'}],
+        }
+      };
+      alerts.unshift(newAlert);
+      closeModal();
+      applySearch();
+      // Highlight first row
+      const firstRow = document.querySelector('#alertsTableBody tr');
+      if (firstRow) firstRow.classList.add('new-row');
+      showToast('Alert issued successfully', true);
+    }
+
+    // ── Detail Panel ───────────────────────────────────────────────
+    function openDetail(a) {
+      const d = a.detail;
+      document.getElementById('dp-title').textContent = `${a.type} · ${a.area.split('–')[0].trim()}`;
+      document.getElementById('dp-id').textContent = d.id;
+      document.getElementById('dp-alert-id').textContent = d.id;
+      document.getElementById('dp-issued').textContent = d.issued;
+      document.getElementById('dp-area').textContent = d.area;
+      document.getElementById('dp-type').innerHTML = `<i data-lucide="alert-octagon" style="width:12px;height:12px;"></i> ${a.type}`;
+      document.getElementById('dp-severity-badge').innerHTML = `<span class="badge ${severityClass(a.severity)}">${a.severity}</span>`;
+      document.getElementById('dp-status-badge').className = `badge ${statusClass(a.status)}`;
+      document.getElementById('dp-status-badge').textContent = a.status;
+      document.getElementById('dp-prob').textContent = a.prob + '%';
+      document.getElementById('dp-conf').textContent = a.conf + '%';
+      document.getElementById('dp-depth').textContent = d.depth;
+      document.getElementById('dp-peak').textContent = d.peak;
+      document.getElementById('dp-residents').textContent = d.residents;
+      document.getElementById('dp-critical').innerHTML = d.critical;
+
+      // Risk factors
+      const rfEl = document.getElementById('dp-risk-factors');
+      rfEl.innerHTML = d.riskFactors.map(rf => `
+        <div class="risk-factor-item">
+          <i data-lucide="${rf.icon}" style="width:14px;height:14px;color:${rf.color};"></i>
+          ${rf.text}
+        </div>
+      `).join('');
+
+      // Actions
+      const actEl = document.getElementById('dp-actions');
+      actEl.innerHTML = d.recommendedActions.map(ra => `
+        <div class="action-item">
+          <i data-lucide="${ra.icon}" style="width:13px;height:13px;"></i>
+          ${ra.text}
+        </div>
+      `).join('');
+
+      document.getElementById('detailOverlay').classList.add('open');
+      lucide.createIcons();
+    }
+    function closeDetail() {
+      document.getElementById('detailOverlay').classList.remove('open');
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────
+    function showToast(msg, success = true, isError = false) {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = 'toast' + (isError ? ' error' : '');
+      const iconName = isError ? 'x-circle' : (success ? 'check-circle-2' : 'info');
+      t.innerHTML = `<i data-lucide="${iconName}" class="toast-icon" style="width:16px;height:16px;"></i> ${msg}`;
+      c.appendChild(t);
+      lucide.createIcons();
+      setTimeout(() => {
+        t.style.animation = 'toastOut 0.25s ease forwards';
+        setTimeout(() => t.remove(), 260);
+      }, 3200);
+    }
+
+    // ── Utilities ──────────────────────────────────────────────────
+    function exportCSV() {
+      const headers = ['Alert ID', 'Time', 'Area', 'Alert Type', 'Severity', 'Probability', 'Confidence', 'Status', 'Issued Info'];
+      const rows = alerts.map(a => [
+        `"${a.detail.id}"`,
+        `"${a.time}"`,
+        `"${a.area.replace(/"/g, '""')}"`,
+        `"${a.type.replace(/"/g, '""')}"`,
+        `"${a.severity}"`,
+        `"${a.prob}%"`,
+        `"${a.conf}%"`,
+        `"${a.status}"`,
+        `"${a.detail.issued.replace(/"/g, '""')}"`
+      ]);
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `HydroShield_Alert_Log_Indore_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Alert log exported as CSV successfully.', true);
+    }
+    function refreshTable() {
+      applySearch();
+      showToast('Alert table refreshed.', true);
+    }
+
+    // ── Init Lucide & URL Params ──────────────────────────────────
+    lucide.createIcons();
+
+    // Check if opened with pre-filled area from other pages
+    const urlParams = new URLSearchParams(window.location.search);
+    const prefillArea = urlParams.get('area');
+    if (prefillArea) {
+      openModal();
+      const areaSelect = document.getElementById('m-area');
+      let found = false;
+      for (let i = 0; i < areaSelect.options.length; i++) {
+        if (areaSelect.options[i].text.includes(prefillArea) || prefillArea.includes(areaSelect.options[i].value)) {
+          areaSelect.selectedIndex = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        const opt = document.createElement('option');
+        opt.value = prefillArea;
+        opt.textContent = prefillArea;
+        opt.selected = true;
+        areaSelect.appendChild(opt);
+      }
+    }
+  </script>
+</body>
+</html>
